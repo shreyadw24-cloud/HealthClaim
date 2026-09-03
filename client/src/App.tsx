@@ -29,6 +29,28 @@ async function verifyClaim(claim: string): Promise<VerifyResult> {
   };
 }
 
+type HistoryItem = { id: number; claim: string; status: Status; time: string; source: string };
+
+function verdictToStatus(v: VerifyResult["verdict"]): Status {
+  if (v === "Supported") return "supported";
+  if (v === "Partially Supported") return "partial";
+  if (v === "Insufficient Evidence") return "insufficient";
+  return "harmful";
+}
+
+async function saveToHistory(claim: string, data: VerifyResult) {
+  const item: HistoryItem = {
+    id: Date.now(),
+    claim,
+    status: verdictToStatus(data.verdict),
+    time: "Just now",
+    source: "Manual check",
+  };
+  const stored = await chrome.storage?.local?.get<{ history?: HistoryItem[] }>("history");
+  const list: HistoryItem[] = stored?.history ?? [];
+  await chrome.storage?.local?.set({ history: [item, ...list] });
+}
+
 type Status = "supported" | "partial" | "insufficient" | "harmful";
 
 const LOADING_MSGS = ["Extracting claim…", "Retrieving evidence…", "Analyzing…"];
@@ -682,8 +704,15 @@ type Filter = typeof FILTERS[number];
 
 function HistoryScreen() {
   const [activeFilter, setActiveFilter] = useState<Filter>("All");
+  const [items, setItems] = useState<HistoryItem[]>(HISTORY);
 
-  const filtered = HISTORY.filter((h) => {
+  useEffect(() => {
+    chrome.storage?.local?.get<{ history?: HistoryItem[] }>("history").then((stored) => {
+      if (stored?.history?.length) setItems(stored.history);
+    });
+  }, []);
+
+  const filtered = items.filter((h) => {
     if (activeFilter === "All") return true;
     return STATUS_LABEL[h.status].toLowerCase() === activeFilter.toLowerCase();
   });
@@ -710,7 +739,7 @@ function HistoryScreen() {
               Claim History
             </h2>
             <p className="font-inter text-[11px] text-[#0B1F3A] mt-1" style={{ opacity: 0.32 }}>
-              {HISTORY.length} claims analyzed
+              {items.length} claims analyzed
             </p>
           </div>
         </div>
@@ -853,6 +882,7 @@ export default function App() {
       const data = await verifyClaim("sample claim text");
       setResult(data);
       chrome.storage?.local?.set({ lastResult: data });
+      saveToHistory("sample claim text", data);
       const isHarmful = data.verdict === "Potentially Harmful" || data.verdict === "Insufficient Evidence";
       setScreen(isHarmful ? "result-harmful" : "result-supported");
     } catch {
