@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-type Screen = "home" | "loading" | "result-supported" | "result-harmful" | "history";
+type Screen = "home" | "loading" | "result-supported" | "result-harmful" | "history" | "error";
 
 // ── API ──────────────────────────────────────────────────────────────────────
 type VerifyResult = {
@@ -97,6 +97,41 @@ function ShieldLogo({ size = 32 }: { size?: number }) {
         strokeLinejoin="round"
       />
     </svg>
+  );
+}
+
+// ── Error ─────────────────────────────────────────────────────────────────────
+function ErrorScreen({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div
+      className="relative w-[360px] h-[600px] bg-[#FAFAF7] overflow-hidden flex flex-col items-center justify-center gap-5 rounded-2xl"
+      style={{ boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)", border: "1px solid rgba(11,31,58,0.06)" }}
+    >
+      <GrainLayer />
+      <div className="relative flex flex-col items-center gap-5" style={{ zIndex: 60 }}>
+        <div style={{ opacity: 0.55 }}>
+          <ShieldLogo size={40} />
+        </div>
+        <div className="flex flex-col items-center gap-1.5 text-center px-10">
+          <h2
+            className="font-fraunces text-[18px] font-medium text-[#0B1F3A]"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            Couldn't verify this claim
+          </h2>
+          <p className="font-inter text-[12px] text-[#0B1F3A]" style={{ opacity: 0.45 }}>
+            Something went wrong while checking the evidence. Please try again.
+          </p>
+        </div>
+        <button
+          onClick={onRetry}
+          className="mt-1 px-5 py-2.5 rounded-full font-inter text-[12px] font-medium transition-all duration-150"
+          style={{ background: "#0B1F3A", color: "#FAFAF7" }}
+        >
+          Try again
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -886,7 +921,7 @@ export default function App() {
       const isHarmful = data.verdict === "Potentially Harmful" || data.verdict === "Insufficient Evidence";
       setScreen(isHarmful ? "result-harmful" : "result-supported");
     } catch {
-      setScreen("home");
+      setScreen("error");
     }
   };
 
@@ -906,6 +941,7 @@ export default function App() {
         <ResultScreen variant="harmful" onClose={() => setScreen("home")} />
       )}
       {screen === "history" && <HistoryScreen />}
+      {screen === "error" && <ErrorScreen onRetry={() => setScreen("home")} />}
     </div>
   );
 }
