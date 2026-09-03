@@ -365,59 +365,57 @@ function LoadingScreen() {
 }
 
 // ── Result ───────────────────────────────────────────────────────────────────
-const RESULT_DATA = {
-  supported: {
-    claim: `"Dark chocolate may reduce cardiovascular disease risk when consumed in moderation."`,
-    status: "Supported" as const,
+const STATUS_STYLE: Record<VerifyResult["verdict"], { pillCls: string; pillBorder: string; barFrom: string; barTo: string; barWidth: string; borderColor: string; accentText: string }> = {
+  Supported: {
     pillCls: "bg-emerald-50 text-emerald-700",
     pillBorder: "rgba(16,185,129,0.35)",
     barFrom: "#10b981",
     barTo: "#34d399",
-    barWidth: "84%",
+    barWidth: "88%",
     borderColor: "rgba(52,211,153,0.55)",
     accentText: "#34d399",
-    evidenceSummary:
-      "Multiple randomized controlled trials and meta-analyses support a modest cardioprotective effect from flavonoid-rich dark chocolate at 20–40g per day. Effect sizes are real but modest, and confounding factors remain.",
-    whyText:
-      "While the underlying data is sound, popular media overstates portion guidance and ignores the confounding sugar content in commercial products, creating a license to overconsume that the evidence doesn't support.",
-    sources: [
-      { icon: "⚗️", name: "NEJM", type: "Randomized Trial", strength: "High" },
-      { icon: "📊", name: "Cochrane", type: "Meta-analysis", strength: "High" },
-      { icon: "📄", name: "BMJ", type: "Cohort Study", strength: "Moderate" },
-    ],
   },
-  harmful: {
-    claim: `"Drinking bleach in small doses eliminates cancer cells and boosts immunity."`,
-    status: "Potentially Harmful" as const,
+  "Partially Supported": {
+    pillCls: "bg-amber-50 text-amber-700",
+    pillBorder: "rgba(217,119,6,0.3)",
+    barFrom: "#d97706",
+    barTo: "#fbbf24",
+    barWidth: "58%",
+    borderColor: "rgba(251,191,36,0.55)",
+    accentText: "#fbbf24",
+  },
+  "Insufficient Evidence": {
+    pillCls: "bg-slate-100 text-slate-600",
+    pillBorder: "rgba(100,116,139,0.3)",
+    barFrom: "rgba(11,31,58,0.4)",
+    barTo: "rgba(11,31,58,0.2)",
+    barWidth: "35%",
+    borderColor: "rgba(11,31,58,0.3)",
+    accentText: "rgba(11,31,58,0.5)",
+  },
+  "Potentially Harmful": {
     pillCls: "bg-rose-50 text-rose-700",
     pillBorder: "rgba(244,63,94,0.3)",
     barFrom: "#be123c",
     barTo: "#fb7185",
-    barWidth: "5%",
+    barWidth: "8%",
     borderColor: "rgba(251,113,133,0.55)",
     accentText: "#fb7185",
-    evidenceSummary:
-      "No credible clinical or preclinical evidence supports this claim. Bleach ingestion causes severe mucosal injury and systemic toxicity — potentially fatal even in trace amounts according to WHO and CDC toxicology reports.",
-    whyText:
-      "This claim circulates primarily on fringe wellness platforms, exploiting fear of conventional cancer treatment. It has no basis in published biomedical literature and directly contradicts fundamental toxicology principles.",
-    sources: [
-      { icon: "🏥", name: "WHO", type: "Safety Bulletin", strength: "High" },
-      { icon: "⚠️", name: "CDC", type: "Toxicology Report", strength: "High" },
-      { icon: "🔬", name: "NIH MedlinePlus", type: "Clinical Guideline", strength: "High" },
-    ],
   },
 };
 
 function ResultScreen({
-  variant,
+  result,
+  claim,
   onClose,
 }: {
-  variant: "supported" | "harmful";
+  result: VerifyResult;
+  claim: string;
   onClose: () => void;
 }) {
   const [accordionOpen, setAccordionOpen] = useState(false);
-  const d = RESULT_DATA[variant];
-  const isHarmful = variant === "harmful";
+  const s = STATUS_STYLE[result.verdict];
+  const isHarmful = result.verdict === "Potentially Harmful" || result.verdict === "Insufficient Evidence";
 
   const footerButtons = [
     {
@@ -506,17 +504,17 @@ function ResultScreen({
             <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.07)" }} />
           </div>
           <p className="font-fraunces text-[15px] font-medium text-[#0B1F3A] leading-[1.55]" style={{ opacity: 0.88 }}>
-            {d.claim}
+            {claim}
           </p>
         </div>
 
         {/* Status + confidence */}
         <div className="flex flex-col gap-2">
           <span
-            className={`self-start px-3 py-1 rounded-full font-inter text-[11px] font-medium ${d.pillCls}`}
-            style={{ border: `1px solid ${d.pillBorder}` }}
+            className={`self-start px-3 py-1 rounded-full font-inter text-[11px] font-medium ${s.pillCls}`}
+            style={{ border: `1px solid ${s.pillBorder}` }}
           >
-            {d.status}
+            {result.verdict}
           </span>
           <div
             className="h-[3px] rounded-full overflow-hidden"
@@ -525,8 +523,8 @@ function ResultScreen({
             <div
               className="h-full rounded-full transition-all duration-1000"
               style={{
-                width: d.barWidth,
-                background: `linear-gradient(90deg, ${d.barFrom}, ${d.barTo})`,
+                width: s.barWidth,
+                background: `linear-gradient(90deg, ${s.barFrom}, ${s.barTo})`,
               }}
             />
           </div>
@@ -541,11 +539,11 @@ function ResultScreen({
         {/* What Evidence Says */}
         <div
           className="pl-3"
-          style={{ borderLeft: `2px solid ${d.borderColor}` }}
+          style={{ borderLeft: `2px solid ${s.borderColor}` }}
         >
           <p
             className="font-inter text-[9px] font-medium uppercase tracking-[0.13em] mb-2"
-            style={{ color: d.accentText, opacity: 0.75 }}
+            style={{ color: s.accentText, opacity: 0.75 }}
           >
             What Evidence Says
           </p>
@@ -553,7 +551,7 @@ function ResultScreen({
             className="font-inter text-[12px] text-[#0B1F3A] leading-[1.72]"
             style={{ opacity: 0.62 }}
           >
-            {d.evidenceSummary}
+            {result.explanation}
           </p>
         </div>
 
@@ -598,7 +596,7 @@ function ResultScreen({
                 className="font-inter text-[12px] text-[#0B1F3A] leading-[1.72]"
                 style={{ opacity: 0.52 }}
               >
-                {d.whyText}
+                {result.explanation}
               </p>
             </div>
           </div>
@@ -613,7 +611,7 @@ function ResultScreen({
             Evidence Sources
           </p>
           <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-0.5">
-            {d.sources.map((src, i) => (
+            {result.sources.map((src, i) => (
               <div
                 key={i}
                 className="flex-none w-32 rounded-xl p-3 flex flex-col gap-2.5"
@@ -623,29 +621,26 @@ function ResultScreen({
                 }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-[16px] leading-none">{src.icon}</span>
-                  <div className={`w-2 h-2 rounded-full ${STRENGTH_DOT[src.strength]}`} />
+                  <span className="text-[16px] leading-none">🔗</span>
+                  <div className="w-2 h-2 rounded-full bg-[#2DD4BF]" />
                 </div>
                 <div>
-                  <p
-                    className="font-inter text-[12px] font-medium text-[#0B1F3A] leading-none mb-1.5"
+                  <a
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-inter text-[12px] font-medium text-[#0B1F3A] leading-none mb-1.5 block hover:underline"
                     style={{ opacity: 0.82 }}
                   >
                     {src.name}
-                  </p>
+                  </a>
                   <span
                     className="inline-block px-1.5 py-0.5 rounded-md font-inter text-[9px] text-[#0B1F3A] tracking-[0.04em]"
                     style={{ background: "rgba(11,31,58,0.07)", opacity: 0.7 }}
                   >
-                    {src.type}
+                    Evidence Source
                   </span>
                 </div>
-                <p
-                  className="font-inter text-[9px] text-[#0B1F3A]"
-                  style={{ opacity: 0.3 }}
-                >
-                  {src.strength}
-                </p>
               </div>
             ))}
           </div>
@@ -932,11 +927,14 @@ function DemoNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen)
 export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [result, setResult] = useState<VerifyResult | null>(null);
+  const [claim, setClaim] = useState("");
 
   const handleVerify = async () => {
     setScreen("loading");
     try {
-      const data = await verifyClaim("sample claim text");
+      const claimText = "sample claim text";
+      const data = await verifyClaim(claimText);
+      setClaim(claimText);
       setResult(data);
       chrome.storage?.local?.set({ lastResult: data });
       saveToHistory("sample claim text", data);
@@ -956,10 +954,10 @@ export default function App() {
             {screen === "home" && <HomeScreen onVerify={handleVerify} onViewHistory={() => chrome.tabs.create({ url: chrome.runtime.getURL("history.html") })} />}
       {screen === "loading" && <LoadingScreen />}
       {screen === "result-supported" && (
-        <ResultScreen variant="supported" onClose={() => setScreen("home")} />
+        result && <ResultScreen result={result} claim={claim} onClose={() => setScreen("home")} />
       )}
       {screen === "result-harmful" && (
-        <ResultScreen variant="harmful" onClose={() => setScreen("home")} />
+        result && <ResultScreen result={result} claim={claim} onClose={() => setScreen("home")} />
       )}
       {screen === "error" && <ErrorScreen onRetry={() => setScreen("home")} />}
     </div>
