@@ -1,6 +1,34 @@
 import { useState, useEffect } from "react";
 
 type Screen = "home" | "loading" | "result-supported" | "result-harmful" | "history";
+
+// ── API ──────────────────────────────────────────────────────────────────────
+type VerifyResult = {
+  verdict: "Supported" | "Partially Supported" | "Insufficient Evidence" | "Potentially Harmful";
+  harmLevel: "Low" | "Medium" | "High";
+  explanation: string;
+  sources: { name: string; url: string }[];
+};
+
+async function verifyClaim(claim: string): Promise<VerifyResult> {
+  // TODO: uncomment when backend is live, remove the mock below
+  // const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
+  //   method: "POST",
+  //   headers: { "Content-Type": "application/json" },
+  //   body: JSON.stringify({ claim }),
+  // });
+  // if (!res.ok) throw new Error("Verification failed");
+  // return res.json();
+
+  await new Promise((r) => setTimeout(r, 3000));
+  return {
+    verdict: "Potentially Harmful",
+    harmLevel: "High",
+    explanation: "No credible clinical or preclinical evidence supports this claim.",
+    sources: [{ name: "WHO", url: "https://who.int" }],
+  };
+}
+
 type Status = "supported" | "partial" | "insufficient" | "harmful";
 
 const LOADING_MSGS = ["Extracting claim…", "Retrieving evidence…", "Analyzing…"];
@@ -817,15 +845,20 @@ function DemoNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen)
 // ── App root ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [result, setResult] = useState<VerifyResult | null>(null);
 
-  // Auto-advance from loading
-  useEffect(() => {
-    if (screen !== "loading") return;
-    const t = setTimeout(() => setScreen("result-supported"), 6600);
-    return () => clearTimeout(t);
-  }, [screen]);
-
-  const handleVerify = () => setScreen("loading");
+  const handleVerify = async () => {
+    setScreen("loading");
+    try {
+      const data = await verifyClaim("sample claim text");
+      setResult(data);
+      chrome.storage?.local?.set({ lastResult: data });
+      const isHarmful = data.verdict === "Potentially Harmful" || data.verdict === "Insufficient Evidence";
+      setScreen(isHarmful ? "result-harmful" : "result-supported");
+    } catch {
+      setScreen("home");
+    }
+  };
 
   return (
     <div
