@@ -136,10 +136,22 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 }
 
 // ── Home ─────────────────────────────────────────────────────────────────────
-function HomeScreen({ onVerify }: { onVerify: () => void }) {
+function HomeScreen({ onVerify, onViewHistory }: { onVerify: () => void; onViewHistory: () => void }) {
   return (
     <div className="relative w-[360px] h-[600px] bg-[#FAFAF7] overflow-hidden flex flex-col items-center justify-center select-none rounded-2xl" style={{ boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)", border: "1px solid rgba(11,31,58,0.06)" }}>
       <GrainLayer />
+
+      <button
+        onClick={onViewHistory}
+        className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+        style={{ border: "1px solid rgba(11,31,58,0.1)", color: "rgba(11,31,58,0.4)", zIndex: 61 }}
+        aria-label="View history"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
+          <circle cx="8" cy="8" r="6.5" />
+          <path d="M8 4.5V8l2.5 1.5" strokeLinejoin="round" />
+        </svg>
+      </button>
 
       {/* Background linework illustration */}
       <svg
@@ -737,7 +749,7 @@ const STATUS_LABEL: Record<Status, string> = {
 const FILTERS = ["All", "Supported", "Partial", "Harmful"] as const;
 type Filter = typeof FILTERS[number];
 
-function HistoryScreen() {
+export function HistoryScreen({ onBack }: { onBack: () => void }) {
   const [activeFilter, setActiveFilter] = useState<Filter>("All");
   const [items, setItems] = useState<HistoryItem[]>(HISTORY);
 
@@ -765,6 +777,16 @@ function HistoryScreen() {
         style={{ borderBottom: "1px solid rgba(11,31,58,0.07)", zIndex: 60 }}
       >
         <div className="flex items-center gap-3">
+          <button
+            onClick={onBack}
+            className="w-7 h-7 flex items-center justify-center rounded-full transition-colors"
+            style={{ border: "1px solid rgba(11,31,58,0.1)", color: "rgba(11,31,58,0.4)" }}
+            aria-label="Back"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7.5 2.5L3 6l4.5 3.5" />
+            </svg>
+          </button>
           <ShieldLogo size={26} />
           <div>
             <h2
@@ -930,9 +952,8 @@ export default function App() {
       className="min-h-full flex flex-col items-center justify-center py-12 px-6"
       style={{ background: "#EFEBE2" }}
     >
-      <DemoNav screen={screen} setScreen={setScreen} />
 
-      {screen === "home" && <HomeScreen onVerify={handleVerify} />}
+            {screen === "home" && <HomeScreen onVerify={handleVerify} onViewHistory={() => chrome.tabs.create({ url: chrome.runtime.getURL("history.html") })} />}
       {screen === "loading" && <LoadingScreen />}
       {screen === "result-supported" && (
         <ResultScreen variant="supported" onClose={() => setScreen("home")} />
@@ -940,7 +961,6 @@ export default function App() {
       {screen === "result-harmful" && (
         <ResultScreen variant="harmful" onClose={() => setScreen("home")} />
       )}
-      {screen === "history" && <HistoryScreen />}
       {screen === "error" && <ErrorScreen onRetry={() => setScreen("home")} />}
     </div>
   );

@@ -12,4 +12,11 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      input: {
+        history: path.resolve(import.meta.dirname, 'history.html'),
+      },
+    },
+  },
 })
