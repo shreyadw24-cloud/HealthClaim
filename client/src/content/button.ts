@@ -20,6 +20,8 @@ const ICON_SHIELD = `
  */
 export function createVerifyButton(onClick: () => void): VerifyButtonHandle {
   const host = document.createElement("healthclaim-button");
+  host.style.setProperty("visibility", "visible", "important");
+  host.style.setProperty("display", "inline-flex", "important");
   host.style.display = "inline-flex";
   host.style.verticalAlign = "middle";
   host.style.marginLeft = "6px";

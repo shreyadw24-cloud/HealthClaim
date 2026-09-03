@@ -53,6 +53,8 @@ export class ResultOverlay {
 
   constructor() {
     this.host = document.createElement("healthclaim-overlay");
+    this.host.style.setProperty("visibility", "visible", "important");
+    this.host.style.setProperty("display", "block", "important");
     this.shadow = this.host.attachShadow({ mode: "open" });
     injectFontLink(this.shadow);
 
