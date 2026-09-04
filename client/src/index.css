@@ -11,7 +11,11 @@ html,
 body,
 #root {
   height: 100%;
-  background: #EFEBE2;
+  background: #FFFFFF;
+}
+
+body {
+  margin: 0;
 }
 
 @keyframes ring-outer {

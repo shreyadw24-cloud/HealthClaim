@@ -138,158 +138,103 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 // ── Home ─────────────────────────────────────────────────────────────────────
 function HomeScreen({ onVerify, onViewHistory }: { onVerify: () => void; onViewHistory: () => void }) {
   return (
-    <div className="relative w-[360px] h-[600px] bg-[#FAFAF7] overflow-hidden flex flex-col items-center justify-center select-none rounded-2xl" style={{ boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)", border: "1px solid rgba(11,31,58,0.06)" }}>
-      <GrainLayer />
+    <div
+      className="relative w-[340px] overflow-hidden flex flex-col rounded-[22px]"
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
+        border: "1px solid rgba(32,178,170,0.16)",
+        boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
+      }}
+    >
+      <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)" }} />
 
-      <button
-        onClick={onViewHistory}
-        className="absolute top-4 right-4 w-7 h-7 flex items-center justify-center rounded-full transition-colors"
-        style={{ border: "1px solid rgba(11,31,58,0.1)", color: "rgba(11,31,58,0.4)", zIndex: 61 }}
-        aria-label="View history"
-      >
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
-          <circle cx="8" cy="8" r="6.5" />
-          <path d="M8 4.5V8l2.5 1.5" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      {/* Background linework illustration */}
-      <svg
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full"
-        viewBox="0 0 360 600"
-        fill="none"
-        stroke="#0B1F3A"
-        strokeWidth="0.75"
-        opacity="0.045"
-      >
-        {/* Phone */}
-        <rect x="112" y="58" width="92" height="158" rx="10" />
-        <line x1="112" y1="84" x2="204" y2="84" />
-        <line x1="112" y1="200" x2="204" y2="200" />
-        <circle cx="158" cy="213" r="5" />
-        <line x1="124" y1="98" x2="180" y2="98" />
-        <line x1="124" y1="108" x2="162" y2="108" />
-        <rect x="124" y="118" width="58" height="42" rx="3" />
-        <line x1="124" y1="170" x2="180" y2="170" />
-        <line x1="124" y1="180" x2="156" y2="180" />
-        {/* Film reel */}
-        <rect x="52" y="295" width="256" height="160" rx="6" />
-        <circle cx="108" cy="375" r="35" />
-        <circle cx="108" cy="375" r="16" />
-        <circle cx="108" cy="375" r="5" />
-        <circle cx="252" cy="375" r="35" />
-        <circle cx="252" cy="375" r="16" />
-        <circle cx="252" cy="375" r="5" />
-        <line x1="143" y1="375" x2="217" y2="375" />
-        <rect x="52" y="298" width="9" height="9" rx="1.5" />
-        <rect x="52" y="314" width="9" height="9" rx="1.5" />
-        <rect x="52" y="330" width="9" height="9" rx="1.5" />
-        <rect x="299" y="298" width="9" height="9" rx="1.5" />
-        <rect x="299" y="314" width="9" height="9" rx="1.5" />
-        <rect x="299" y="330" width="9" height="9" rx="1.5" />
-        {/* Social cards */}
-        <rect x="36" y="478" width="118" height="80" rx="6" />
-        <rect x="206" y="478" width="118" height="80" rx="6" />
-        <circle cx="50" cy="494" r="7" />
-        <line x1="62" y1="492" x2="138" y2="492" />
-        <line x1="62" y1="498" x2="118" y2="498" />
-        <rect x="48" y="508" width="96" height="38" rx="3" />
-        <circle cx="220" cy="494" r="7" />
-        <line x1="232" y1="492" x2="308" y2="492" />
-        <line x1="232" y1="498" x2="288" y2="498" />
-        <rect x="218" y="508" width="96" height="38" rx="3" />
-      </svg>
-
-      {/* Ambient top glow */}
-      <div
-        aria-hidden="true"
-        className="absolute top-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.28), transparent)" }}
-      />
-
-      {/* Content */}
-      <div className="relative flex flex-col items-center gap-5 px-8" style={{ zIndex: 60 }}>
-        {/* Logo glow */}
-        <div className="relative flex items-center justify-center">
-          <div
-            aria-hidden="true"
-            className="absolute w-24 h-24 rounded-full blur-3xl"
-            style={{ background: "rgba(45,212,191,0.14)" }}
-          />
-          <div
-            className="relative p-3.5 rounded-[18px]"
-            style={{
-              background: "rgba(45,212,191,0.06)",
-              border: "1px solid rgba(45,212,191,0.2)",
-            }}
-          >
-            <ShieldLogo size={46} />
-          </div>
+      <div className="flex items-center justify-between" style={{ padding: "16px 18px 0" }}>
+        <div className="flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#20B2AA" }} />
+          <span className="font-inter text-[10px] uppercase" style={{ letterSpacing: "0.14em", color: "#8A8A86" }}>
+            Trusted evidence
+          </span>
         </div>
-
-        {/* Wordmark */}
-        <div className="flex flex-col items-center gap-1.5">
-          <h1
-            className="font-fraunces text-[30px] font-semibold text-[#0B1F3A] leading-none"
-            style={{ letterSpacing: "-0.025em" }}
-          >
-            HealthClaim
-          </h1>
-          <p
-            className="font-fraunces text-[13.5px] italic text-[#2DD4BF]"
-            style={{ opacity: 0.72, letterSpacing: "0.01em" }}
-          >
-            Verify before you follow.
-          </p>
-        </div>
-
-        {/* Separator */}
-        <div className="flex items-center gap-3 w-full max-w-[200px]">
-          <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.1)" }} />
-          <div className="w-1 h-1 rounded-full" style={{ background: "rgba(45,212,191,0.4)" }} />
-          <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.1)" }} />
-        </div>
-
-        {/* Subtext */}
-        <p
-          className="text-center font-inter text-[12px] text-[#0B1F3A] leading-relaxed max-w-[200px]"
-          style={{ opacity: 0.38 }}
-        >
-          AI-powered evidence review for health claims found on social media and the web.
-        </p>
-
-        {/* CTA */}
-        <button
-          onClick={onVerify}
-          className="cta-glow mt-1 px-8 py-3.5 rounded-full font-inter font-medium text-[13px] text-[#0B1F3A] transition-transform duration-200 hover:scale-[1.03] active:scale-[0.97]"
-          style={{
-            background: "linear-gradient(135deg, #2DD4BF 0%, #5eead4 100%)",
-            letterSpacing: "0.025em",
-          }}
-        >
-          Verify Health Claim
+        <button onClick={onViewHistory} aria-label="View history" style={{ color: "#B0B0AA" }}>
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M2.8 8A5.2 5.2 0 1 1 4.4 11.8" />
+            <path d="M2.8 5.2V8H5.6" />
+            <path d="M8 5.2V8l2.1 1.3" />
+          </svg>
         </button>
       </div>
 
-      {/* Bottom hint */}
-      <div
-        className="absolute bottom-5 flex items-center gap-2"
-        style={{ opacity: 0.22, zIndex: 60 }}
-      >
-        <div className="w-5 h-px bg-[#0B1F3A]" />
-        <span className="font-inter text-[9px] text-[#0B1F3A] tracking-[0.16em] uppercase">
-          Select text to analyze
-        </span>
-        <div className="w-5 h-px bg-[#0B1F3A]" />
+      <div className="flex flex-col items-center" style={{ padding: "22px 30px 26px" }}>
+        <div
+          className="relative flex items-center justify-center mb-4"
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 20,
+            background: "radial-gradient(circle at 30% 25%, #3ED6C9, #20B2AA 60%, #178F88 100%)",
+            boxShadow: "0 14px 26px -8px rgba(32,178,170,0.5)",
+          }}
+        >
+          <div className="absolute" style={{ inset: -6, borderRadius: 26, border: "1px solid rgba(32,178,170,0.18)" }} />
+          <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+            <path d="M20 3L5.5 9.5V22C5.5 30 11.8 37 20 39C28.2 37 34.5 30 34.5 22V9.5L20 3Z" fill="rgba(255,255,255,0.12)" stroke="#FFFFFF" strokeWidth="1.6" strokeLinejoin="round" />
+            <path d="M9 21H14L16 15L18.5 27.5L20.5 17L22.2 22L24 21H31" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
+
+        <h1 className="font-fraunces" style={{ fontSize: 26, fontWeight: 600, color: "#0B1F3A", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+          HealthClaim
+        </h1>
+        <p className="font-fraunces italic" style={{ fontSize: 13, color: "#178F88", margin: "0 0 16px", letterSpacing: "0.01em" }}>
+          Verify before you follow.
+        </p>
+
+        <div className="flex items-center gap-2.5 w-full mb-4" style={{ maxWidth: 190 }}>
+          <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.12)" }} />
+          <div className="w-1 h-1 rounded-full" style={{ background: "#20B2AA" }} />
+          <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.12)" }} />
+        </div>
+
+        <p className="text-center" style={{ fontSize: 12.5, color: "#6B6A63", lineHeight: 1.6, maxWidth: 230, margin: "0 0 22px" }}>
+          AI-powered evidence review for health claims found on social media and the web.
+        </p>
+
+        <button
+          onClick={onVerify}
+          className="w-full flex items-center justify-center gap-2"
+          style={{
+            padding: "14px 0",
+            border: "none",
+            borderRadius: 14,
+            background: "linear-gradient(135deg, #3ED6C9, #20B2AA 55%, #178F88)",
+            color: "#FFFFFF",
+            fontWeight: 600,
+            fontSize: 13.5,
+            letterSpacing: "0.02em",
+            boxShadow: "0 12px 24px -8px rgba(32,178,170,0.55), inset 0 1px 0 rgba(255,255,255,0.2)",
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
+            <path d="M9 12l2 2l4 -4" />
+          </svg>
+          Verify health claim
+        </button>
+
+        <div className="flex items-center gap-3 mt-5" style={{ opacity: 0.6 }}>
+          <span className="uppercase" style={{ fontSize: 9.5, letterSpacing: "0.08em", color: "#0B1F3A" }}>Evidence from</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>WHO</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>CDC</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>NIH</span>
+          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>PubMed</span>
+        </div>
       </div>
 
-      {/* Bottom hairline */}
-      <div
-        aria-hidden="true"
-        className="absolute bottom-0 left-0 right-0 h-px"
-        style={{ background: "linear-gradient(90deg, transparent, rgba(45,212,191,0.18), transparent)" }}
-      />
+      <div className="flex items-center justify-center gap-2" style={{ borderTop: "1px solid rgba(32,178,170,0.1)", padding: "12px 0" }}>
+        <div className="w-4 h-px" style={{ background: "rgba(11,31,58,0.18)" }} />
+        <span className="uppercase" style={{ fontSize: 9, letterSpacing: "0.14em", color: "#B0B0AA" }}>Select text to analyze</span>
+        <div className="w-4 h-px" style={{ background: "rgba(11,31,58,0.18)" }} />
+      </div>
     </div>
   );
 }
@@ -947,11 +892,10 @@ export default function App() {
 
   return (
     <div
-      className="min-h-full flex flex-col items-center justify-center py-12 px-6"
-      style={{ background: "#EFEBE2" }}
+      className="flex flex-col items-center py-6"
+      style={{ background: "#F3FBFA" }}
     >
-
-            {screen === "home" && <HomeScreen onVerify={handleVerify} onViewHistory={() => chrome.tabs.create({ url: chrome.runtime.getURL("history.html") })} />}
+      {screen === "home" && <HomeScreen onVerify={handleVerify} onViewHistory={() => chrome.tabs.create({ url: chrome.runtime.getURL("history.html") })} />}
       {screen === "loading" && <LoadingScreen />}
       {screen === "result-supported" && (
         result && <ResultScreen result={result} claim={claim} onClose={() => setScreen("home")} />
