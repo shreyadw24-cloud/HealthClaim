@@ -752,6 +752,20 @@ const STATUS_LABEL: Record<Status, string> = {
 const FILTERS = ["All", "Supported", "Partial", "Harmful"] as const;
 type Filter = typeof FILTERS[number];
 
+function exportCsv(items: HistoryItem[]) {
+  const header = "Claim,Status,Source,Time\n";
+  const rows = items
+    .map((i) => `"${i.claim.replace(/"/g, '""')}",${STATUS_LABEL[i.status]},${i.source},${i.time}`)
+    .join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "healthclaim-history.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function HistoryScreen({ onBack }: { onBack: () => void }) {
   const [activeFilter, setActiveFilter] = useState<Filter>("All");
   const [items, setItems] = useState<HistoryItem[]>(HISTORY);
@@ -898,7 +912,11 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
         <span className="font-inter text-[11px]" style={{ color: "#b0b0aa" }}>
           Powered by HealthClaim AI · Clinical evidence sources only
         </span>
-        <button className="font-inter text-[11.5px] font-semibold flex items-center gap-1.5" style={{ color: "#178F88" }}>
+        <button
+          onClick={() => exportCsv(filtered)}
+          className="font-inter text-[11.5px] font-semibold flex items-center gap-1.5"
+          style={{ color: "#178F88" }}
+        >
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 2v8m0 0-3-3m3 3 3-3M3 13h10" />
           </svg>
