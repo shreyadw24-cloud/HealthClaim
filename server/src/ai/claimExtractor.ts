@@ -3,6 +3,7 @@ import { generateText } from "./gemini.js";
 export interface ExtractedClaim {
   originalText: string;
   claim: string;
+  searchTerms: string;
 }
 
 function cleanJsonResponse(text: string): string {
@@ -39,7 +40,8 @@ Rules:
 
 Required JSON format:
 {
-  "claim": "the normalized factual health claim"
+  "claim": "the normalized factual health claim",
+  "searchTerms": "3-6 keywords suitable for a medical literature search (e.g. PubMed), not a full sentence"
 }
 
 Text:
@@ -62,13 +64,18 @@ ${originalText}
 
     return {
       originalText,
-      claim: parsed.claim.trim()
+      claim: parsed.claim.trim(),
+      searchTerms:
+        typeof parsed.searchTerms === "string" && parsed.searchTerms.trim()
+          ? parsed.searchTerms.trim()
+          : parsed.claim.trim()
     };
   } catch {
     // Safe fallback if Gemini doesn't return valid JSON.
     return {
       originalText,
-      claim: originalText
+      claim: originalText,
+      searchTerms: originalText
     };
   }
 }

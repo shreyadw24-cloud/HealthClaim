@@ -81,6 +81,60 @@ async function searchPubMed(
     .filter((article): article is PubMedArticle => article !== null);
 }
 
+interface MedlinePlusResult {
+  title: string;
+  snippet: string;
+  url: string;
+}
+
+function stripTags(value: string): string {
+  return value
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// MedlinePlus (a National Library of Medicine / NIH service) offers a free,
+// public web service for searching its health topic summaries by free text.
+// Unlike the generic search-page links below, this returns actual snippet
+// content we can show the user directly.
+async function searchMedlinePlus(
+  claim: string
+): Promise<MedlinePlusResult[]> {
+  const url =
+    "https://wsearch.nlm.nih.gov/ws/query" +
+    `?db=healthTopics&term=${encodeURIComponent(claim)}&retmax=2`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      `MedlinePlus request failed with status ${response.status}`
+    );
+  }
+
+  const xml = await response.text();
+  const documents = xml.split("<document").slice(1, 3);
+
+  return documents.map((doc) => {
+    const titleMatch = doc.match(
+      /<content name="title"[^>]*>([\s\S]*?)<\/content>/
+    );
+    const snippetMatch = doc.match(
+      /<content name="snippet"[^>]*>([\s\S]*?)<\/content>/
+    );
+    const urlMatch = doc.match(/url="([^"]+)"/);
+
+    return {
+      title: titleMatch ? stripTags(titleMatch[1]) : "MedlinePlus health topic",
+      snippet: snippetMatch
+        ? stripTags(snippetMatch[1])
+        : "Relevant MedlinePlus health topic found — see the linked page for details.",
+      url: urlMatch ? urlMatch[1] : "https://medlineplus.gov"
+    };
+  });
+}
+
 export async function searchEvidence(
   claim: string
 ): Promise<Evidence[]> {
@@ -91,7 +145,13 @@ export async function searchEvidence(
   const evidence: Evidence[] = [];
 
   try {
-    const pubmedArticles = await searchPubMed(claim);
+    let pubmedArticles = await searchPubMed(claim);
+
+    if (pubmedArticles.length === 0) {
+      // Fallback: the keyword query was too narrow, try broader terms
+      const broaderTerm = claim.split(" ").slice(0, 3).join(" ");
+      pubmedArticles = await searchPubMed(broaderTerm);
+    }
 
     for (const article of pubmedArticles) {
       evidence.push({
@@ -106,18 +166,34 @@ export async function searchEvidence(
     console.error("PubMed search failed:", error);
   }
 
-  // Add official trusted-source search pages as additional navigation
-  // references. These are search links, not claims that the page itself
-  // proves the health claim.
+  try {
+    const medlineResults = await searchMedlinePlus(claim);
+
+    for (const result of medlineResults) {
+      evidence.push({
+        title: result.title,
+        summary: result.snippet,
+        source: "MedlinePlus (NIH)",
+        url: result.url
+      });
+    }
+  } catch (error) {
+    console.error("MedlinePlus search failed:", error);
+  }
+
+  // For sources we don't have a real content API for, link to their
+  // official search page instead of claiming we checked the page's
+  // content — the AI has not independently verified this specific
+  // claim against what's on that page.
   for (const source of TRUSTED_SOURCES) {
     if (source.name === "PubMed") {
       continue;
     }
 
     evidence.push({
-      title: `${source.name} search`,
+      title: `${source.name} — official source`,
       summary:
-        `Search ${source.name} for authoritative information related to this claim.`,
+        `This links to an official ${source.name} resource. The AI has not independently verified this specific claim against its content — use it to cross-check manually.`,
       source: source.name,
       url: source.searchUrl(claim)
     });

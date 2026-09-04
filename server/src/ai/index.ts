@@ -32,9 +32,11 @@ export async function verifyClaim(
   // STEP 1: Extract and normalize the claim.
   const extracted = await extractClaim(text);
 
-  // STEP 2: Retrieve evidence.
+  // STEP 2: Retrieve evidence — use extracted keywords, not the full
+  // sentence, since literature search engines match keywords far better
+  // than natural-language claims.
   const evidence = await retrieveEvidence(
-    extracted.claim
+    extracted.searchTerms
   );
 
   // STEP 3: Convert evidence into context for Gemini.
