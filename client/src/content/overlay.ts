@@ -168,6 +168,10 @@ export class ResultOverlay {
     this.stopLoadingTimer();
     this.position(anchorRect);
     const v = STATUS_STYLE[result.verdict];
+    const barWidth =
+      typeof result.confidence === "number" && !Number.isNaN(result.confidence)
+        ? `${Math.round(Math.max(0, Math.min(1, result.confidence)) * 100)}%`
+        : v.barWidth;
     const isHarmful = result.verdict === "Potentially Harmful" || result.verdict === "Insufficient Evidence";
     const sourcesHtml = result.sources
       .map(
@@ -194,7 +198,7 @@ export class ResultOverlay {
           <span class="hc-pill" style="background:${v.pillBg};color:${v.pillText};border:1px solid ${v.pillBorder}">${escapeHtml(result.verdict)}</span>
           <span class="hc-confidence-label">Evidence confidence</span>
           <div class="hc-bar-track">
-            <div class="hc-bar-fill" style="width:${v.barWidth};background:linear-gradient(90deg, ${v.barFrom}, ${v.barTo})"></div>
+            <div class="hc-bar-fill" style="width:${barWidth};background:linear-gradient(90deg, ${v.barFrom}, ${v.barTo})"></div>
           </div>
         </div>
 

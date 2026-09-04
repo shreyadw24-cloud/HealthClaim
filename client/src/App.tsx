@@ -12,6 +12,7 @@ const POPUP_MIN_HEIGHT = 520;
 type VerifyResult = {
   verdict: "Supported" | "Partially Supported" | "Insufficient Evidence" | "Potentially Harmful";
   harmLevel: "Low" | "Medium" | "High";
+  confidence: number;
   explanation: string;
   sources: { name: string; url: string }[];
 };
@@ -482,6 +483,12 @@ function ResultScreen({
   const [accordionOpen, setAccordionOpen] = useState(false);
   const s = STATUS_STYLE[result.verdict];
   const isHarmful = result.verdict === "Potentially Harmful" || result.verdict === "Insufficient Evidence";
+  // Prefer the backend's real confidence score; fall back to the per-verdict
+  // default width if a response ever comes back without one.
+  const barWidth =
+    typeof result.confidence === "number" && !Number.isNaN(result.confidence)
+      ? `${Math.round(Math.max(0, Math.min(1, result.confidence)) * 100)}%`
+      : s.barWidth;
 
   const footerButtons = [
     {
@@ -606,7 +613,7 @@ function ResultScreen({
             <div
               className="h-full rounded-[4px] transition-all duration-1000"
               style={{
-                width: s.barWidth,
+                width: barWidth,
                 background: `linear-gradient(90deg, ${s.barFrom}, ${s.barTo})`,
               }}
             />

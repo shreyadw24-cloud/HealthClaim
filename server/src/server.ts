@@ -43,6 +43,7 @@ app.post("/verify-claim", async (req, res) => {
     res.json({
       verdict: result.verdict,
       harmLevel: toHarmLevel(result.verdict),
+      confidence: result.confidence,
       explanation: result.explanation,
       sources: result.sources.map((s) => ({
         name: s.source || s.title,

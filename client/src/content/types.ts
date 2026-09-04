@@ -5,6 +5,7 @@
 export type VerifyResult = {
   verdict: "Supported" | "Partially Supported" | "Insufficient Evidence" | "Potentially Harmful";
   harmLevel: "Low" | "Medium" | "High";
+  confidence: number;
   explanation: string;
   sources: { name: string; url: string }[];
 };
