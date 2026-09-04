@@ -953,7 +953,7 @@ export default function App() {
 
   return (
     <div
-      className="min-h-full flex flex-col items-center justify-center py-12 px-6"
+      className="flex flex-col items-center justify-center py-6 px-5"
       style={{ background: "#EAF6F4" }}
     >
       {screen === "home" && <HomeScreen onVerify={handleVerify} onViewHistory={() => chrome.tabs.create({ url: chrome.runtime.getURL("history.html") })} />}
