@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 
 type Screen = "home" | "loading" | "result-supported" | "result-harmful" | "history" | "error";
 
+// Shared popup card size — every popup screen (Home/Loading/Error/Result) uses this
+// so the extension window doesn't jump in size as the user navigates between them.
+// History Dashboard is a separate full page (history.html), not the popup, so it's excluded.
+const POPUP_WIDTH = 340;
+const POPUP_MIN_HEIGHT = 520;
+
 // ── API ──────────────────────────────────────────────────────────────────────
 type VerifyResult = {
   verdict: "Supported" | "Partially Supported" | "Insufficient Evidence" | "Potentially Harmful";
@@ -21,7 +27,7 @@ async function verifyClaim(claim: string): Promise<VerifyResult> {
   // return res.json();
 
   await new Promise((r) => setTimeout(r, 3000));
-  throw new Error("test error");
+  // throw new Error("test error");
   return {
     verdict: "Potentially Harmful",
     harmLevel: "High",
@@ -131,8 +137,10 @@ function ShieldLogo({ size = 32 }: { size?: number }) {
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      className="relative w-[360px] h-[600px] overflow-hidden flex flex-col items-center justify-center gap-5 rounded-[22px]"
+      className="relative overflow-hidden flex flex-col items-center justify-center gap-5 rounded-[22px]"
       style={{
+        width: POPUP_WIDTH,
+        minHeight: POPUP_MIN_HEIGHT,
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
         boxShadow: "0 4px 14px rgba(11,31,58,0.05), 0 24px 60px -20px rgba(11,31,58,0.22)",
         border: "1px solid rgba(32,178,170,0.16)",
@@ -179,8 +187,10 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 function HomeScreen({ onVerify, onViewHistory }: { onVerify: () => void; onViewHistory: () => void }) {
   return (
     <div
-      className="relative w-[340px] overflow-hidden rounded-[22px]"
+      className="relative overflow-hidden flex flex-col rounded-[22px]"
       style={{
+        width: POPUP_WIDTH,
+        minHeight: POPUP_MIN_HEIGHT,
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
         boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
         border: "1px solid rgba(32,178,170,0.16)",
@@ -209,7 +219,7 @@ function HomeScreen({ onVerify, onViewHistory }: { onVerify: () => void; onViewH
       </div>
 
       {/* Content */}
-      <div className="flex flex-col items-center px-[30px] pt-[22px] pb-[26px]">
+      <div className="flex-1 flex flex-col items-center justify-center px-[30px] pt-[22px] pb-[26px]">
         {/* Logo badge */}
         <div className="relative flex items-center justify-center mb-4">
           <div
@@ -327,8 +337,10 @@ function LoadingScreen() {
 
   return (
     <div
-      className="relative w-[340px] h-[520px] overflow-hidden flex flex-col rounded-[22px]"
+      className="relative overflow-hidden flex flex-col rounded-[22px]"
       style={{
+        width: POPUP_WIDTH,
+        minHeight: POPUP_MIN_HEIGHT,
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
         boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
         border: "1px solid rgba(32,178,170,0.16)",
@@ -359,7 +371,7 @@ function LoadingScreen() {
           >
             <svg width="46" height="24" viewBox="0 0 92 48" fill="none">
               <polyline
-                className="pulse-line"
+                className="hc-pulse-line"
                 points="0,24 16,24 22,10 28,38 34,4 40,24 92,24"
                 stroke="#FFFFFF"
                 strokeWidth="2.5"
@@ -506,8 +518,10 @@ function ResultScreen({
 
   return (
     <div
-      className="relative w-[340px] overflow-hidden flex flex-col rounded-[22px]"
+      className="relative overflow-hidden flex flex-col rounded-[22px]"
       style={{
+        width: POPUP_WIDTH,
+        minHeight: POPUP_MIN_HEIGHT,
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
         boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
         border: "1px solid rgba(32,178,170,0.16)",
@@ -551,7 +565,7 @@ function ResultScreen({
       </div>
 
       {/* Body */}
-      <div className="px-[18px] py-4">
+      <div className="flex-1 px-[18px] py-4">
         {/* Claim card */}
         <div
           className="rounded-2xl p-4"
