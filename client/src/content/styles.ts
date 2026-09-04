@@ -44,30 +44,33 @@ export const BUTTON_CSS = `
   .hc-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 10px;
+    gap: 7px;
+    padding: 6px 14px 6px 6px;
     border-radius: 999px;
-    border: 1px solid rgba(32,178,170,0.45);
-    background: rgba(32,178,170,0.08);
-    color: ${BRAND.navy};
+    border: none;
+    background: linear-gradient(135deg, ${BRAND.tealLight} 0%, ${BRAND.teal} 55%, ${BRAND.tealDark} 100%);
+    color: #FFFFFF;
     font-size: 11.5px;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.01em;
     cursor: pointer;
     line-height: 1;
-    transition: background 0.15s ease, transform 0.1s ease;
+    box-shadow: 0 6px 16px -4px rgba(32,178,170,0.55), 0 1px 2px rgba(11,31,58,0.08);
+    transition: box-shadow 0.15s ease, transform 0.1s ease, filter 0.15s ease;
   }
-  .hc-btn:hover { background: rgba(32,178,170,0.18); }
+  .hc-btn:hover { filter: brightness(1.05); box-shadow: 0 8px 20px -4px rgba(32,178,170,0.65), 0 1px 2px rgba(11,31,58,0.08); }
   .hc-btn:active { transform: scale(0.97); }
-  .hc-btn[disabled] { opacity: 0.55; cursor: default; }
-  .hc-btn-dot {
-    width: 6px; height: 6px; border-radius: 999px;
-    background: ${BRAND.teal};
+  .hc-btn[disabled] { opacity: 0.6; cursor: default; }
+  .hc-btn-badge {
+    width: 20px; height: 20px; border-radius: 7px;
+    background: rgba(255,255,255,0.18);
+    display: flex; align-items: center; justify-content: center;
     flex: none;
   }
   .hc-btn-spinner {
     width: 11px; height: 11px; border-radius: 999px;
-    border: 1.5px solid rgba(11,31,58,0.2);
-    border-top-color: ${BRAND.navy};
+    border: 1.5px solid rgba(255,255,255,0.35);
+    border-top-color: #FFFFFF;
     animation: hc-spin 0.7s linear infinite;
     flex: none;
   }

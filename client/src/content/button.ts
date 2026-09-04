@@ -8,10 +8,13 @@ export interface VerifyButtonHandle {
   setState: (state: ButtonState) => void;
 }
 
-const ICON_SHIELD = `
-  <svg width="13" height="7" viewBox="0 0 92 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <polyline points="0,24 16,24 22,10 28,38 34,4 40,24 92,24" stroke="#20B2AA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-  </svg>
+const ICON_LOGO = `
+  <span class="hc-btn-badge">
+    <svg width="12" height="12" viewBox="0 0 40 40" fill="none">
+      <path d="M20 3L5.5 9.5V22C5.5 30 11.8 37 20 39C28.2 37 34.5 30 34.5 22V9.5L20 3Z" fill="rgba(255,255,255,0.15)" stroke="#FFFFFF" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M9 21H14L16 15L18.5 27.5L20.5 17L22.2 22L24 21H31" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </span>
 `;
 
 /**
@@ -39,7 +42,7 @@ export function createVerifyButton(onClick: () => void): VerifyButtonHandle {
   const button = document.createElement("button");
   button.type = "button";
   button.className = "hc-btn";
-  button.innerHTML = `${ICON_SHIELD}<span class="hc-btn-label">Verify Health Claim</span>`;
+  button.innerHTML = `${ICON_LOGO}<span class="hc-btn-label">Verify Health Claim</span>`;
   button.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -55,11 +58,11 @@ export function createVerifyButton(onClick: () => void): VerifyButtonHandle {
       button.innerHTML = `<span class="hc-btn-spinner"></span><span class="hc-btn-label">Verifying…</span>`;
     } else if (state === "no-claim") {
       button.disabled = false;
-      button.innerHTML = `${ICON_SHIELD}<span class="hc-btn-label">No claim detected</span>`;
+      button.innerHTML = `${ICON_LOGO}<span class="hc-btn-label">No claim detected</span>`;
       setTimeout(() => setState("idle"), 2200);
     } else {
       button.disabled = false;
-      button.innerHTML = `${ICON_SHIELD}<span class="hc-btn-label">Verify Health Claim</span>`;
+      button.innerHTML = `${ICON_LOGO}<span class="hc-btn-label">Verify Health Claim</span>`;
     }
   };
 
