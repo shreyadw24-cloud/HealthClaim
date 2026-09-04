@@ -752,10 +752,67 @@ const STATUS_LABEL: Record<Status, string> = {
 const FILTERS = ["All", "Supported", "Partial", "Harmful"] as const;
 type Filter = typeof FILTERS[number];
 
+// Seed/mock rows use small hand-written ids (1, 2, 3…) and already carry a
+// human-readable time string ("2h ago") — show those as-is. Real saved rows
+// use Date.now() as their id, so we can derive an always-current relative
+// time from it instead of trusting whatever was baked in at save-time.
+function formatRelativeTime(item: HistoryItem): string {
+  if (item.id < 1e12) return item.time;
+  const diffMs = Date.now() - item.id;
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "Just now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const day = Math.floor(hr / 24);
+  if (day === 1) return "Yesterday";
+  if (day < 7) return `${day}d ago`;
+  const week = Math.floor(day / 7);
+  if (week < 4) return `${week}w ago`;
+  return new Date(item.id).toLocaleDateString();
+}
+
+// Post URLs are long ("https://x.com/handle/status/209386…") — map known
+// platforms to a friendly label (matching the style already used in the
+// seed/mock rows: "Twitter/X", "Instagram", "Reddit"…). Falls back to the
+// bare hostname for unrecognized domains, and passes non-URL sources
+// ("Manual check") through unchanged. The full link is still available via
+// the row's title tooltip.
+const PLATFORM_LABEL: Record<string, string> = {
+  "x.com": "Twitter/X",
+  "twitter.com": "Twitter/X",
+  "instagram.com": "Instagram",
+  "reddit.com": "Reddit",
+  "old.reddit.com": "Reddit",
+  "tiktok.com": "TikTok",
+  "youtube.com": "YouTube",
+  "youtu.be": "YouTube",
+  "facebook.com": "Facebook",
+  "threads.net": "Threads",
+};
+
+function formatSource(source: string): string {
+  try {
+    const hostname = new URL(source).hostname.replace(/^www\./, "");
+    return PLATFORM_LABEL[hostname] ?? hostname;
+  } catch {
+    return source;
+  }
+}
+
+function isValidUrl(source: string): boolean {
+  try {
+    new URL(source);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function exportCsv(items: HistoryItem[]) {
   const header = "Claim,Status,Source,Time\n";
   const rows = items
-    .map((i) => `"${i.claim.replace(/"/g, '""')}",${STATUS_LABEL[i.status]},${i.source},${i.time}`)
+    .map((i) => `"${i.claim.replace(/"/g, '""')}",${STATUS_LABEL[i.status]},${i.source},${formatRelativeTime(i)}`)
     .join("\n");
   const blob = new Blob([header + rows], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -783,7 +840,7 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div
-      className="relative w-full max-w-[680px] overflow-hidden rounded-[20px]"
+      className="relative w-full max-w-[880px] overflow-hidden rounded-[20px]"
       style={{
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
         border: "1px solid rgba(32,178,170,0.16)",
@@ -853,8 +910,8 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
       <div
         className="grid px-6 py-2"
         style={{
-          gridTemplateColumns: "2.4fr 1fr 1fr 0.8fr",
-          gap: "16px",
+          gridTemplateColumns: "2.3fr 0.9fr 1.1fr 0.8fr",
+          gap: "28px",
           borderTop: "1px solid rgba(11,31,58,0.07)",
           borderBottom: "1px solid rgba(11,31,58,0.07)",
         }}
@@ -877,8 +934,8 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
             key={item.id}
             className="grid px-6 py-3.5 items-center transition-colors hover:bg-[#0B1F3A]/[0.02]"
             style={{
-              gridTemplateColumns: "2.4fr 1fr 1fr 0.8fr",
-              gap: "16px",
+              gridTemplateColumns: "2.3fr 0.9fr 1.1fr 0.8fr",
+              gap: "28px",
               borderBottom: i === filtered.length - 1 ? "none" : "1px solid rgba(11,31,58,0.05)",
             }}
           >
@@ -894,11 +951,28 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
                 {STATUS_LABEL[item.status]}
               </span>
             </div>
+            {isValidUrl(item.source) ? (
+              <a
+                href={item.source}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-inter text-[12px] overflow-hidden text-ellipsis whitespace-nowrap transition-colors hover:underline"
+                style={{ color: "#178F88", minWidth: 0 }}
+                title={item.source}
+              >
+                {formatSource(item.source)}
+              </a>
+            ) : (
+              <span
+                className="font-inter text-[12px] overflow-hidden text-ellipsis whitespace-nowrap"
+                style={{ color: "#9a988e", minWidth: 0 }}
+                title={item.source}
+              >
+                {formatSource(item.source)}
+              </span>
+            )}
             <span className="font-inter text-[12px]" style={{ color: "#9a988e" }}>
-              {item.source}
-            </span>
-            <span className="font-inter text-[12px]" style={{ color: "#9a988e" }}>
-              {item.time}
+              {formatRelativeTime(item)}
             </span>
           </div>
         ))}
