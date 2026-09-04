@@ -204,9 +204,9 @@ export const OVERLAY_CSS = `
     font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
     color: #9a988e; margin: 14px 0 10px;
   }
-  .hc-sources { display: flex; gap: 8px; }
+  .hc-sources { display: flex; gap: 8px; flex-wrap: wrap; }
   .hc-source-chip {
-    flex: 1; border-radius: 12px; padding: 10px 8px; text-align: center;
+    flex: 1; min-width: 72px; border-radius: 12px; padding: 10px 8px; text-align: center;
     background: #F3FBFA; border: 1px solid rgba(32,178,170,0.18);
     text-decoration: none; display: block;
   }
@@ -216,6 +216,19 @@ export const OVERLAY_CSS = `
   }
   .hc-source-caption {
     font-family: 'Inter', sans-serif; font-size: 9px; color: #9a988e; margin-top: 2px;
+  }
+  .hc-sources-more {
+    display: block; margin-top: 8px; background: none; border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: #20B2AA; padding: 0;
+  }
+  .hc-explanation-list { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .hc-explanation-list li { display: flex; align-items: flex-start; gap: 8px; }
+  .hc-explanation-list li::before {
+    content: ""; width: 4px; height: 4px; border-radius: 999px; background: currentColor;
+    margin-top: 7px; flex: none;
+  }
+  .hc-explanation-list span {
+    font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.6; color: #4a4a45;
   }
 
   /* ── Footer — same 3-icon row as ResultScreen ───────────────────────────── */
@@ -232,6 +245,8 @@ export const OVERLAY_CSS = `
   .hc-footer-btn span {
     font-family: 'Inter', sans-serif; font-size: 9.5px; color: #6b6a63;
   }
+  .hc-footer-btn.hc-active { color: #178F88; }
+  .hc-footer-btn.hc-active span { color: #178F88; font-weight: 600; }
 
   /* ── Loading state — same pulse mark, rings and copy as LoadingScreen ──── */
   .hc-loading {

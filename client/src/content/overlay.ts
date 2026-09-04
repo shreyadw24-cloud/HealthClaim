@@ -173,15 +173,30 @@ export class ResultOverlay {
         ? `${Math.round(Math.max(0, Math.min(1, result.confidence)) * 100)}%`
         : v.barWidth;
     const isHarmful = result.verdict === "Potentially Harmful" || result.verdict === "Insufficient Evidence";
-    const sourcesHtml = result.sources
-      .map(
-        (s) =>
-          `<a class="hc-source-chip" href="${escapeAttr(s.url)}" target="_blank" rel="noopener noreferrer">
-            <div class="hc-source-name">${escapeHtml(s.name)}</div>
-            <div class="hc-source-caption">Evidence source</div>
-          </a>`,
-      )
-      .join("");
+
+    const SOURCES_PREVIEW_COUNT = 3;
+    const sourceChip = (s: VerifyResult["sources"][number]) =>
+      `<a class="hc-source-chip" href="${escapeAttr(s.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="hc-source-name">${escapeHtml(s.name)}</div>
+        <div class="hc-source-caption">Evidence source</div>
+      </a>`;
+    const previewSources = result.sources.slice(0, SOURCES_PREVIEW_COUNT);
+    const hiddenSources = result.sources.slice(SOURCES_PREVIEW_COUNT);
+    const sourcesHtml = previewSources.map(sourceChip).join("");
+    const hiddenSourcesHtml = hiddenSources.map(sourceChip).join("");
+
+    // "Explain simply" reuses the same explanation field the backend already
+    // sends — just breaks it into short, plain sentences instead of one
+    // dense paragraph. No extra API call needed.
+    const explanationSentences =
+      result.explanation
+        .match(/[^.!?]+[.!?]*/g)
+        ?.map((t) => t.trim())
+        .filter(Boolean) ?? [result.explanation];
+    const explanationFullHtml = `<p class="hc-explanation">${escapeHtml(result.explanation)}</p>`;
+    const explanationSimpleHtml = `<ul class="hc-explanation-list" style="color:${v.accentText}">${explanationSentences
+      .map((sentence) => `<li><span>${escapeHtml(sentence)}</span></li>`)
+      .join("")}</ul>`;
 
     this.card.innerHTML = `
       ${this.header()}
@@ -204,7 +219,7 @@ export class ResultOverlay {
 
         <div class="hc-evidence-block" style="border-color:${v.borderColor}">
           <p class="hc-evidence-label" style="color:${v.accentText}">What Evidence Says</p>
-          <p class="hc-explanation">${escapeHtml(result.explanation)}</p>
+          <div class="hc-explanation-slot">${explanationFullHtml}</div>
         </div>
 
         <div class="hc-accordion">
@@ -221,25 +236,29 @@ export class ResultOverlay {
 
         ${
           result.sources.length
-            ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${sourcesHtml}</div>`
+            ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${sourcesHtml}</div>${
+                hiddenSources.length
+                  ? `<button class="hc-sources-more">+${hiddenSources.length} more source${hiddenSources.length > 1 ? "s" : ""}</button>`
+                  : ""
+              }`
             : ""
         }
       </div>
 
       <div class="hc-overlay-footer">
-        <button class="hc-footer-btn" aria-label="More context">
+        <button class="hc-footer-btn hc-btn-more" aria-label="More context">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <circle cx="8" cy="8" r="6.5" /><line x1="8" y1="6.5" x2="8" y2="11" /><circle cx="8" cy="4.8" r="0.6" fill="currentColor" />
           </svg>
           <span>More</span>
         </button>
-        <button class="hc-footer-btn" aria-label="Explain simply">
+        <button class="hc-footer-btn hc-btn-explain" aria-label="Explain simply">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <path d="M2 4.5h12M2 8h8.5M2 11.5h5.5" />
           </svg>
           <span>Explain</span>
         </button>
-        <button class="hc-footer-btn" aria-label="Share result">
+        <button class="hc-footer-btn hc-btn-share" aria-label="Share result">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <circle cx="12" cy="3" r="1.8" /><circle cx="3.5" cy="8" r="1.8" /><circle cx="12" cy="13" r="1.8" />
             <line x1="5.3" y1="7.1" x2="10.2" y2="3.9" /><line x1="5.3" y1="8.9" x2="10.2" y2="12.1" />
@@ -256,6 +275,62 @@ export class ResultOverlay {
     accBtn?.addEventListener("click", () => {
       accPanel?.classList.toggle("hc-open");
       accChevron?.classList.toggle("hc-open");
+    });
+
+    // More context — reveal the rest of the evidence sources beyond the
+    // initial 3-item preview.
+    const moreBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-more");
+    const moreSourcesBtn = this.card.querySelector<HTMLButtonElement>(".hc-sources-more");
+    const sourcesRow = this.card.querySelector<HTMLDivElement>(".hc-sources");
+    const expandSources = () => {
+      if (!hiddenSources.length || !sourcesRow) return;
+      sourcesRow.insertAdjacentHTML("beforeend", hiddenSourcesHtml);
+      moreSourcesBtn?.remove();
+      moreBtn?.classList.add("hc-active");
+    };
+    moreBtn?.addEventListener("click", expandSources);
+    moreSourcesBtn?.addEventListener("click", expandSources);
+
+    // Explain simply — swap the same explanation field between one dense
+    // paragraph and a short-sentence bullet breakdown. No extra API call.
+    const explainBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-explain");
+    const explainLabel = explainBtn?.querySelector("span");
+    const explanationSlot = this.card.querySelector<HTMLDivElement>(".hc-explanation-slot");
+    let simpleMode = false;
+    explainBtn?.addEventListener("click", () => {
+      simpleMode = !simpleMode;
+      if (explanationSlot) explanationSlot.innerHTML = simpleMode ? explanationSimpleHtml : explanationFullHtml;
+      if (explainLabel) explainLabel.textContent = simpleMode ? "Full" : "Explain";
+      explainBtn.classList.toggle("hc-active", simpleMode);
+    });
+
+    // Share result — native share sheet when available, otherwise copy a
+    // short summary to the clipboard.
+    const shareBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-share");
+    const shareLabel = shareBtn?.querySelector("span");
+    shareBtn?.addEventListener("click", async () => {
+      const shareText = `"${truncate(claim, 160)}" — ${result.verdict} (checked with HealthClaim)`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: "HealthClaim result", text: shareText });
+        } catch {
+          // user dismissed the native share sheet — nothing to do
+        }
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(shareText);
+        if (shareLabel) {
+          shareLabel.textContent = "Copied";
+          shareBtn.classList.add("hc-active");
+          setTimeout(() => {
+            shareLabel.textContent = "Share";
+            shareBtn.classList.remove("hc-active");
+          }, 1800);
+        }
+      } catch {
+        // clipboard blocked — silently ignore, button just won't confirm
+      }
     });
 
     this.show();

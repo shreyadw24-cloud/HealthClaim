@@ -481,6 +481,9 @@ function ResultScreen({
   onClose: () => void;
 }) {
   const [accordionOpen, setAccordionOpen] = useState(false);
+  const [simpleMode, setSimpleMode] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [sourcesExpanded, setSourcesExpanded] = useState(false);
   const s = STATUS_STYLE[result.verdict];
   const isHarmful = result.verdict === "Potentially Harmful" || result.verdict === "Insufficient Evidence";
   // Prefer the backend's real confidence score; fall back to the per-verdict
@@ -490,9 +493,41 @@ function ResultScreen({
       ? `${Math.round(Math.max(0, Math.min(1, result.confidence)) * 100)}%`
       : s.barWidth;
 
+  // "Explain simply" reuses the same explanation field the backend already
+  // sends — just breaks it into short, plain sentences instead of one dense
+  // paragraph. No extra API call needed.
+  const explanationSentences = result.explanation.match(/[^.!?]+[.!?]*/g)?.map((t) => t.trim()).filter(Boolean) ?? [
+    result.explanation,
+  ];
+
+  const SOURCES_PREVIEW_COUNT = 3;
+  const visibleSources = sourcesExpanded ? result.sources : result.sources.slice(0, SOURCES_PREVIEW_COUNT);
+  const hiddenSourcesCount = Math.max(0, result.sources.length - SOURCES_PREVIEW_COUNT);
+
+  const handleShare = async () => {
+    const shareText = `"${claim}" — ${result.verdict} (checked with HealthClaim)`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "HealthClaim result", text: shareText });
+      } catch {
+        // user dismissed the native share sheet — nothing to do
+      }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // clipboard blocked — silently ignore, button just won't confirm
+    }
+  };
+
   const footerButtons = [
     {
-      tip: "More context",
+      tip: sourcesExpanded ? "Fewer sources" : "More context",
+      active: sourcesExpanded,
+      onClick: () => setSourcesExpanded((v) => !v),
       icon: (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
           <circle cx="8" cy="8" r="6.5" />
@@ -502,7 +537,9 @@ function ResultScreen({
       ),
     },
     {
-      tip: "Explain simply",
+      tip: simpleMode ? "Show full" : "Explain simply",
+      active: simpleMode,
+      onClick: () => setSimpleMode((v) => !v),
       icon: (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
           <path d="M2 4.5h12M2 8h8.5M2 11.5h5.5" />
@@ -510,7 +547,9 @@ function ResultScreen({
       ),
     },
     {
-      tip: "Share result",
+      tip: copied ? "Copied" : "Share result",
+      active: copied,
+      onClick: handleShare,
       icon: (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
           <circle cx="12" cy="3" r="1.8" />
@@ -631,9 +670,22 @@ function ResultScreen({
           >
             What Evidence Says
           </p>
-          <p className="font-inter text-[13px] leading-[1.6] mt-1.5" style={{ color: "#4a4a45" }}>
-            {result.explanation}
-          </p>
+          {simpleMode ? (
+            <ul className="mt-1.5 flex flex-col gap-1.5">
+              {explanationSentences.map((sentence, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="mt-[7px] w-[4px] h-[4px] rounded-full flex-none" style={{ background: s.accentText }} />
+                  <span className="font-inter text-[13px] leading-[1.6]" style={{ color: "#4a4a45" }}>
+                    {sentence}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="font-inter text-[13px] leading-[1.6] mt-1.5" style={{ color: "#4a4a45" }}>
+              {result.explanation}
+            </p>
+          )}
         </div>
 
         {/* Accordion */}
@@ -687,14 +739,14 @@ function ResultScreen({
           >
             Evidence Sources
           </p>
-          <div className="flex gap-2">
-            {result.sources.map((src, i) => (
+          <div className="flex gap-2 flex-wrap">
+            {visibleSources.map((src, i) => (
               <a
                 key={i}
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
+                className="flex-1 min-w-[72px] rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
                 style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
               >
                 <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
@@ -702,6 +754,15 @@ function ResultScreen({
               </a>
             ))}
           </div>
+          {hiddenSourcesCount > 0 && !sourcesExpanded && (
+            <button
+              onClick={() => setSourcesExpanded(true)}
+              className="mt-2 font-inter text-[11px] font-semibold"
+              style={{ color: s.accentText }}
+            >
+              +{hiddenSourcesCount} more source{hiddenSourcesCount > 1 ? "s" : ""}
+            </button>
+          )}
         </div>
       </div>
 
@@ -710,14 +771,19 @@ function ResultScreen({
         className="flex items-center justify-around py-3"
         style={{ borderTop: "1px solid rgba(32,178,170,0.12)" }}
       >
-        {footerButtons.map(({ tip, icon }) => (
+        {footerButtons.map(({ tip, icon, active, onClick }, idx) => (
           <button
-            key={tip}
-            className="flex flex-col items-center gap-1"
+            key={idx}
+            onClick={onClick}
+            className="flex flex-col items-center gap-1 transition-transform duration-150 active:scale-90"
             aria-label={tip}
+            aria-pressed={active}
           >
-            <span style={{ color: "#20B2AA" }}>{icon}</span>
-            <span className="font-inter text-[9.5px]" style={{ color: "#6b6a63" }}>
+            <span style={{ color: active ? "#178F88" : "#20B2AA" }}>{icon}</span>
+            <span
+              className="font-inter text-[9.5px]"
+              style={{ color: active ? "#178F88" : "#6b6a63", fontWeight: active ? 600 : 400 }}
+            >
               {tip.split(" ")[0]}
             </span>
           </button>
