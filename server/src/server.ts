@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { verifyClaim } from "./ai/index.js";
 import type { VerifyClaimResult } from "./ai/index.js";
+import { saveVerification, getHistory } from "./db/verifications.js";
 
 const app = express();
 
@@ -39,11 +40,13 @@ app.post("/verify-claim", async (req, res) => {
   try {
     const startTime = Date.now();
     const result = await verifyClaim(claim);
+    const harmLevel = toHarmLevel(result.verdict);
+
+    await saveVerification(claim, result, harmLevel);
 
     res.json({
       verdict: result.verdict,
-      harmLevel: toHarmLevel(result.verdict),
-      confidence: result.confidence,
+      harmLevel,
       explanation: result.explanation,
       sources: result.sources.map((s) => ({
         name: s.source || s.title,
@@ -57,6 +60,11 @@ app.post("/verify-claim", async (req, res) => {
       error: "Verification failed. Please try again.",
     });
   }
+});
+
+app.get("/history", async (req, res) => {
+  const history = await getHistory();
+  res.json(history);
 });
 
 const PORT = 3000;
