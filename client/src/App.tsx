@@ -17,23 +17,13 @@ type VerifyResult = {
 };
 
 async function verifyClaim(claim: string): Promise<VerifyResult> {
-  // TODO: uncomment when backend is live, remove the mock below
-  // const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
-  //   method: "POST",
-  //   headers: { "Content-Type": "application/json" },
-  //   body: JSON.stringify({ claim }),
-  // });
-  // if (!res.ok) throw new Error("Verification failed");
-  // return res.json();
-
-  await new Promise((r) => setTimeout(r, 3000));
-  // throw new Error("test error");
-  return {
-    verdict: "Potentially Harmful",
-    harmLevel: "High",
-    explanation: "No credible clinical or preclinical evidence supports this claim.",
-    sources: [{ name: "WHO", url: "https://who.int" }],
-  };
+  const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ claim }),
+  });
+  if (!res.ok) throw new Error("Verification failed");
+  return res.json();
 }
 
 type HistoryItem = { id: number; claim: string; status: Status; time: string; source: string };
