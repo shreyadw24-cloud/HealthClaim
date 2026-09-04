@@ -10,8 +10,18 @@ const PROCESSED = new WeakSet<Element>();
 const overlay = new ResultOverlay();
 
 function resolvePostUrl(postEl: HTMLElement): string | undefined {
-  const link = postEl.querySelector<HTMLAnchorElement>('a[href*="/status/"], a[href*="/p/"], a[href*="/comments/"]');
-  return link?.href;
+  const link = postEl.querySelector<HTMLAnchorElement>(
+    'a[href*="/status/"], a[href*="/p/"], a[href*="/comments/"], a[href*="/watch?v="], a[href*="/shorts/"], a[href*="/video/"], a[href*="/posts/"], a[href*="/post/"], a[href*="/feed/update/"], a[href*="/videos/"], a[href*="/photo/"]',
+  );
+  if (link?.href) return link.href;
+  // YouTube watch pages and TikTok video pages are single-item pages, not a
+  // feed of many posts — the current page *is* the post, so fall back to it
+  // when nothing inside the matched element links back to itself (e.g. a
+  // comment thread doesn't contain a link to its own video).
+  if (/(^|\.)youtube\.com$/.test(location.hostname) || /(^|\.)tiktok\.com$/.test(location.hostname)) {
+    return location.href;
+  }
+  return undefined;
 }
 
 function handleVerifyClick(adapter: SiteAdapter, postEl: HTMLElement, buttonEl: HTMLElement, setState: (s: "idle" | "loading" | "no-claim") => void) {

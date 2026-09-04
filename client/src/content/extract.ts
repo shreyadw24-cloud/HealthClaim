@@ -71,6 +71,81 @@ const redditAdapter: SiteAdapter = {
   },
 };
 
+// Text-only for now: pulls the video's title/description/comment text, the
+// same way the other adapters pull post text. Actually transcribing spoken
+// audio from the video itself is a separate, bigger piece of work — tracked
+// as a follow-up, not covered here.
+//
+// ⚠️ YouTube and TikTok change their DOM (class names, data-* attributes)
+// often and without notice. If posts stop being detected, re-check these
+// selectors against the live page in DevTools before assuming the adapter
+// logic itself is broken.
+const youtubeAdapter: SiteAdapter = {
+  id: "youtube",
+  postSelector: "ytd-watch-metadata, #description, ytd-comment-thread-renderer",
+  getClaimText(postEl) {
+    const text = postEl.textContent ?? "";
+    return isLikelyClaim(text) ? cleanText(text) : null;
+  },
+  getAnchorEl(postEl) {
+    return postEl.querySelector<HTMLElement>("#top-row") ?? postEl;
+  },
+};
+
+const tiktokAdapter: SiteAdapter = {
+  id: "tiktok",
+  postSelector: '[data-e2e="browse-video-desc"], [data-e2e="video-desc"]',
+  getClaimText(postEl) {
+    const text = postEl.textContent ?? "";
+    return isLikelyClaim(text) ? cleanText(text) : null;
+  },
+  getAnchorEl(postEl) {
+    return postEl;
+  },
+};
+
+// Meta's other two apps (Facebook, Threads) share the same underlying
+// component library as Instagram, so `[role="article"]` is the most stable
+// thing to key off — Meta obfuscates class names on every deploy, but the
+// ARIA role has stayed put across redesigns so far.
+const facebookAdapter: SiteAdapter = {
+  id: "facebook",
+  postSelector: 'div[role="article"]',
+  getClaimText(postEl) {
+    const body = postEl.querySelector<HTMLElement>('[data-ad-preview="message"]') ?? postEl;
+    const text = body.textContent ?? "";
+    return isLikelyClaim(text) ? cleanText(text) : null;
+  },
+  getAnchorEl(postEl) {
+    return postEl;
+  },
+};
+
+const threadsAdapter: SiteAdapter = {
+  id: "threads",
+  postSelector: 'div[role="article"]',
+  getClaimText(postEl) {
+    const text = postEl.textContent ?? "";
+    return isLikelyClaim(text) ? cleanText(text) : null;
+  },
+  getAnchorEl(postEl) {
+    return postEl;
+  },
+};
+
+const linkedinAdapter: SiteAdapter = {
+  id: "linkedin",
+  postSelector: "div.feed-shared-update-v2, div[data-urn]",
+  getClaimText(postEl) {
+    const body = postEl.querySelector<HTMLElement>(".feed-shared-inline-show-more-text, .feed-shared-text");
+    const text = body?.textContent ?? postEl.textContent ?? "";
+    return isLikelyClaim(text) ? cleanText(text) : null;
+  },
+  getAnchorEl(postEl) {
+    return postEl.querySelector<HTMLElement>(".feed-shared-social-action-bar") ?? postEl;
+  },
+};
+
 // Fallback: treats any standalone <article> / <p> block of readable length as
 // a candidate claim. Good enough for blog posts, news pages, and any platform
 // we don't have a dedicated adapter for yet.
@@ -90,6 +165,11 @@ const HOST_ADAPTERS: { test: RegExp; adapter: SiteAdapter }[] = [
   { test: /(^|\.)x\.com$|(^|\.)twitter\.com$/, adapter: twitterAdapter },
   { test: /(^|\.)instagram\.com$/, adapter: instagramAdapter },
   { test: /(^|\.)reddit\.com$/, adapter: redditAdapter },
+  { test: /(^|\.)youtube\.com$/, adapter: youtubeAdapter },
+  { test: /(^|\.)tiktok\.com$/, adapter: tiktokAdapter },
+  { test: /(^|\.)facebook\.com$/, adapter: facebookAdapter },
+  { test: /(^|\.)threads\.net$/, adapter: threadsAdapter },
+  { test: /(^|\.)linkedin\.com$/, adapter: linkedinAdapter },
 ];
 
 export function detectAdapter(hostname: string = location.hostname): SiteAdapter {

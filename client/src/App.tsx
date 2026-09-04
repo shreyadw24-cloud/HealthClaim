@@ -796,6 +796,7 @@ const PLATFORM_LABEL: Record<string, string> = {
   "youtu.be": "YouTube",
   "facebook.com": "Facebook",
   "threads.net": "Threads",
+  "linkedin.com": "LinkedIn",
 };
 
 function formatSource(source: string): string {
