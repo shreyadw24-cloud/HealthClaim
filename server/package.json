@@ -1,18 +1,20 @@
 {
   "name": "healthclaim-server",
   "version": "1.0.0",
-  "description": "AI and evidence pipeline for HealthClaim",
+  "description": "Backend API, AI, and evidence pipeline for HealthClaim",
   "type": "module",
   "scripts": {
-    "dev": "tsx src/test.ts",
+    "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/test.js"
+    "start": "node dist/server.js"
   },
   "dependencies": {
+    "express": "^5.2.1",
     "@google/genai": "^1.0.0",
     "dotenv": "^17.0.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
