@@ -124,7 +124,17 @@ function ShieldLogo({ size = 32 }: { size?: number }) {
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
-function ErrorScreen({ onRetry }: { onRetry: () => void }) {
+function ErrorScreen({
+  onRetry,
+  title = "Couldn't verify this claim",
+  message = "Something went wrong while checking the evidence. Please try again.",
+  retryLabel = "Try again",
+}: {
+  onRetry: () => void;
+  title?: string;
+  message?: string;
+  retryLabel?: string;
+}) {
   return (
     <div
       className="relative overflow-hidden flex flex-col items-center justify-center gap-5 rounded-[22px]"
@@ -151,10 +161,10 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
             className="font-fraunces text-[18px] font-medium text-[#0B1F3A]"
             style={{ letterSpacing: "-0.02em" }}
           >
-            Couldn't verify this claim
+            {title}
           </h2>
           <p className="font-inter text-[12px] text-[#0B1F3A]" style={{ opacity: 0.45 }}>
-            Something went wrong while checking the evidence. Please try again.
+            {message}
           </p>
         </div>
         <button
@@ -166,7 +176,7 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
             boxShadow: "0 10px 20px -8px rgba(32,178,170,0.5)",
           }}
         >
-          Try again
+          {retryLabel}
         </button>
       </div>
     </div>
@@ -929,24 +939,53 @@ function DemoNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen)
   );
 }
 
+// Reads the user's current text selection from the active tab. Returns ""
+// if nothing is selected, the tab has no id (e.g. a chrome:// page), or the
+// page doesn't allow script injection.
+async function getSelectedTextFromActiveTab(): Promise<string> {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.id) return "";
+  try {
+    const [{ result }] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => window.getSelection()?.toString().trim() ?? "",
+    });
+    return (result ?? "").trim();
+  } catch {
+    return "";
+  }
+}
+
 // ── App root ─────────────────────────────────────────────────────────────────
 export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claim, setClaim] = useState("");
+  const [errorInfo, setErrorInfo] = useState<{ title: string; message: string; retryLabel: string } | null>(null);
 
   const handleVerify = async () => {
     setScreen("loading");
     try {
-      const claimText = "sample claim text";
-      const data = await verifyClaim(claimText);
-      setClaim(claimText);
+      const selected = await getSelectedTextFromActiveTab();
+      if (!selected) {
+        setErrorInfo({
+          title: "No text selected",
+          message: "Highlight a health claim on the page, then click Verify health claim again.",
+          retryLabel: "Got it",
+        });
+        setScreen("error");
+        return;
+      }
+
+      const data = await verifyClaim(selected);
+      setClaim(selected);
       setResult(data);
       chrome.storage?.local?.set({ lastResult: data });
-      saveToHistory("sample claim text", data);
+      saveToHistory(selected, data);
       const isHarmful = data.verdict === "Potentially Harmful" || data.verdict === "Insufficient Evidence";
       setScreen(isHarmful ? "result-harmful" : "result-supported");
     } catch {
+      setErrorInfo(null);
       setScreen("error");
     }
   };
@@ -964,7 +1003,15 @@ export default function App() {
       {screen === "result-harmful" && (
         result && <ResultScreen result={result} claim={claim} onClose={() => setScreen("home")} />
       )}
-      {screen === "error" && <ErrorScreen onRetry={() => setScreen("home")} />}
+      {screen === "error" && (
+        <ErrorScreen
+          onRetry={() => {
+            setErrorInfo(null);
+            setScreen("home");
+          }}
+          {...(errorInfo ?? {})}
+        />
+      )}
     </div>
   );
 }
