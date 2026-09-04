@@ -1,5 +1,6 @@
 import type { SiteAdapter } from "./extract";
 import { getSelectedTextWithin } from "./extract";
+import type { ClaimPayload } from "./types";
 import { createVerifyButton } from "./button";
 import { ResultOverlay } from "./overlay";
 import { requestVerification } from "./messaging";
@@ -24,23 +25,56 @@ function resolvePostUrl(postEl: HTMLElement): string | undefined {
   return undefined;
 }
 
+function elementRect(el: HTMLElement) {
+  const r = el.getBoundingClientRect();
+  return { x: r.x, y: r.y, width: r.width, height: r.height };
+}
+
 function handleVerifyClick(adapter: SiteAdapter, postEl: HTMLElement, buttonEl: HTMLElement, setState: (s: "idle" | "loading" | "no-claim") => void) {
   const selected = getSelectedTextWithin(postEl);
-  const claim = selected ?? adapter.getClaimText(postEl);
+  const textClaim = selected ?? adapter.getClaimText(postEl);
+  const anchorRect = buttonEl.getBoundingClientRect();
 
-  if (!claim) {
+  // Fallback chain: selected/caption text first, then a screenshot of the
+  // post's image or video frame, then give up with "no-claim".
+  if (textClaim) {
+    runVerification(adapter, postEl, buttonEl, setState, { kind: "text", text: textClaim }, textClaim);
+    return;
+  }
+
+  const mediaEl = adapter.getClaimMedia?.(postEl);
+  if (!mediaEl) {
     setState("no-claim");
     return;
   }
 
-  const anchorRect = buttonEl.getBoundingClientRect();
+  const payload: ClaimPayload = {
+    kind: "media-rect",
+    rect: elementRect(mediaEl),
+    devicePixelRatio: window.devicePixelRatio || 1,
+  };
   setState("loading");
-  overlay.showLoading(anchorRect, claim);
+  overlay.showLoading(anchorRect, "Reading image…");
+  runVerification(adapter, postEl, buttonEl, setState, payload, "Image claim");
+}
 
-  requestVerification(claim, resolvePostUrl(postEl))
+function runVerification(
+  adapter: SiteAdapter,
+  postEl: HTMLElement,
+  buttonEl: HTMLElement,
+  setState: (s: "idle" | "loading" | "no-claim") => void,
+  payload: ClaimPayload,
+  displayClaim: string,
+) {
+  if (payload.kind === "text") {
+    setState("loading");
+    overlay.showLoading(buttonEl.getBoundingClientRect(), displayClaim);
+  }
+
+  requestVerification(payload, resolvePostUrl(postEl))
     .then((result) => {
       setState("idle");
-      overlay.showResult(buttonEl.getBoundingClientRect(), claim, result);
+      overlay.showResult(buttonEl.getBoundingClientRect(), displayClaim, result);
     })
     .catch((err: Error) => {
       setState("idle");

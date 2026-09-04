@@ -1,4 +1,5 @@
 import { extractClaim } from "./claimExtractor.js";
+import { extractClaimFromImage, extractClaimFromAudio } from "./mediaExtractor.js";
 import { classifyClaim } from "./classifier.js";
 import { explainClaim } from "./explainer.js";
 import { retrieveEvidence } from "../evidence/index.js";
@@ -20,17 +21,33 @@ export interface VerifyClaimResult {
   }[];
 }
 
+// A claim can come in as raw text, a screenshot of an image/video frame, or
+// a recorded audio clip — extraction differs per kind, everything after
+// that (evidence, classification, explanation) is identical.
+export type ClaimInput =
+  | { kind: "text"; text: string }
+  | { kind: "image"; imageBase64: string; mimeType?: string }
+  | { kind: "audio"; audioBase64: string; mimeType?: string };
+
 export async function verifyClaim(
-  text: string
+  input: ClaimInput
 ): Promise<VerifyClaimResult> {
   const startTime = Date.now();
 
-  if (!text || !text.trim()) {
-    throw new Error("Claim text cannot be empty.");
-  }
-
-  // STEP 1: Extract and normalize the claim.
-  const extracted = await extractClaim(text);
+  // STEP 1: Extract and normalize the claim — text, image, or audio.
+  const extracted = await (async () => {
+    switch (input.kind) {
+      case "text":
+        if (!input.text || !input.text.trim()) {
+          throw new Error("Claim text cannot be empty.");
+        }
+        return extractClaim(input.text);
+      case "image":
+        return extractClaimFromImage(input.imageBase64, input.mimeType);
+      case "audio":
+        return extractClaimFromAudio(input.audioBase64, input.mimeType);
+    }
+  })();
 
   // STEP 2: Retrieve evidence — use extracted keywords, not the full
   // sentence, since literature search engines match keywords far better

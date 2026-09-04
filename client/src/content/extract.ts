@@ -13,6 +13,12 @@ export interface SiteAdapter {
   getClaimText: (postEl: HTMLElement) => string | null;
   /** Element the verify button should be anchored next to inside the post. */
   getAnchorEl: (postEl: HTMLElement) => HTMLElement | null;
+  /**
+   * Image or video element to screenshot when getClaimText() finds no text
+   * (e.g. an infographic post, or a Reel/Short with no caption). Optional —
+   * platforms without this fall straight to "no-claim" when there's no text.
+   */
+  getClaimMedia?: (postEl: HTMLElement) => HTMLImageElement | HTMLVideoElement | null;
 }
 
 function cleanText(raw: string): string {
@@ -39,6 +45,12 @@ const twitterAdapter: SiteAdapter = {
   getAnchorEl(postEl) {
     return postEl.querySelector<HTMLElement>('[role="group"]') ?? postEl;
   },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("video") ??
+      postEl.querySelector<HTMLImageElement>('[data-testid="tweetPhoto"] img')
+    );
+  },
 };
 
 const instagramAdapter: SiteAdapter = {
@@ -54,6 +66,12 @@ const instagramAdapter: SiteAdapter = {
   getAnchorEl(postEl) {
     return postEl.querySelector<HTMLElement>("section") ?? postEl;
   },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("video") ??
+      postEl.querySelector<HTMLImageElement>("img[srcset]")
+    );
+  },
 };
 
 const redditAdapter: SiteAdapter = {
@@ -68,6 +86,12 @@ const redditAdapter: SiteAdapter = {
   },
   getAnchorEl(postEl) {
     return postEl.querySelector<HTMLElement>('[slot="text-body"], [data-testid="post-content"]') ?? postEl;
+  },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("shreddit-player video, video") ??
+      postEl.querySelector<HTMLImageElement>('[slot="post-media-container"] img, img')
+    );
   },
 };
 
@@ -90,6 +114,12 @@ const youtubeAdapter: SiteAdapter = {
   getAnchorEl(postEl) {
     return postEl.querySelector<HTMLElement>("#top-row") ?? postEl;
   },
+  getClaimMedia() {
+    // The player isn't inside postEl (postEl is the metadata/description/
+    // comment block) — it's the single main player on the page, so we
+    // query the document directly instead of postEl.
+    return document.querySelector<HTMLVideoElement>("video.html5-main-video, #movie_player video");
+  },
 };
 
 const tiktokAdapter: SiteAdapter = {
@@ -101,6 +131,16 @@ const tiktokAdapter: SiteAdapter = {
   },
   getAnchorEl(postEl) {
     return postEl;
+  },
+  getClaimMedia(postEl) {
+    // postEl here is just the description text, not the video container —
+    // walk up to the nearest feed item and look for the player inside it,
+    // falling back to whatever video is currently on screen.
+    const container = postEl.closest<HTMLElement>('[data-e2e="feed-item"], [data-e2e="recommend-list-item-container"]');
+    return (
+      container?.querySelector<HTMLVideoElement>("video") ??
+      document.querySelector<HTMLVideoElement>("video")
+    );
   },
 };
 
@@ -119,6 +159,12 @@ const facebookAdapter: SiteAdapter = {
   getAnchorEl(postEl) {
     return postEl;
   },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("video") ??
+      postEl.querySelector<HTMLImageElement>('img[referrerpolicy="origin-when-cross-origin"]')
+    );
+  },
 };
 
 const threadsAdapter: SiteAdapter = {
@@ -130,6 +176,12 @@ const threadsAdapter: SiteAdapter = {
   },
   getAnchorEl(postEl) {
     return postEl;
+  },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("video") ??
+      postEl.querySelector<HTMLImageElement>("img")
+    );
   },
 };
 
@@ -143,6 +195,12 @@ const linkedinAdapter: SiteAdapter = {
   },
   getAnchorEl(postEl) {
     return postEl.querySelector<HTMLElement>(".feed-shared-social-action-bar") ?? postEl;
+  },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("video") ??
+      postEl.querySelector<HTMLImageElement>(".feed-shared-image img, .update-components-image img")
+    );
   },
 };
 
@@ -158,6 +216,12 @@ const genericAdapter: SiteAdapter = {
   },
   getAnchorEl(postEl) {
     return postEl;
+  },
+  getClaimMedia(postEl) {
+    return (
+      postEl.querySelector<HTMLVideoElement>("video") ??
+      postEl.querySelector<HTMLImageElement>("img")
+    );
   },
 };
 

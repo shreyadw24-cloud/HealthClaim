@@ -33,7 +33,7 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "activeTab", "tabs", "scripting"],
+  "permissions": ["storage", "activeTab", "tabs", "scripting", "tabCapture", "offscreen"],
   "host_permissions": [
     "http://localhost:3000/*",
     "https://twitter.com/*",

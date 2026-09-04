@@ -15,7 +15,7 @@ async function main() {
   console.log("\nAnalyzing...\n");
 
   try {
-    const result = await verifyClaim(testClaim);
+    const result = await verifyClaim({ kind: "text", text: testClaim });
 
     console.log("RESULT");
     console.log("------------------------------");

@@ -1,9 +1,9 @@
-import type { VerifyRequestMessage, VerifyResponseMessage, VerifyResult } from "./types";
+import type { ClaimPayload, VerifyRequestMessage, VerifyResponseMessage, VerifyResult } from "./types";
 
-export function requestVerification(claim: string, postUrl?: string): Promise<VerifyResult> {
+export function requestVerification(payload: ClaimPayload, postUrl?: string): Promise<VerifyResult> {
   const message: VerifyRequestMessage = {
     type: "HEALTHCLAIM_VERIFY",
-    claim,
+    payload,
     source: location.hostname,
     postUrl,
   };

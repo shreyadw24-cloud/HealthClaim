@@ -30,3 +30,24 @@ export async function generateText(prompt: string): Promise<string> {
 
   return text.trim();
 }
+
+// NEW — lets us send image/audio bytes alongside a text prompt (used for
+// image and audio claim extraction, not just plain text claims).
+export type GeminiPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } };
+
+export async function generateWithParts(parts: GeminiPart[]): Promise<string> {
+  const response = await gemini.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [{ role: "user", parts }]
+  });
+
+  const text = response.text;
+
+  if (!text) {
+    throw new Error("Gemini returned an empty response.");
+  }
+
+  return text.trim();
+}

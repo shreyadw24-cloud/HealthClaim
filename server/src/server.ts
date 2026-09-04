@@ -1,13 +1,15 @@
 import express from "express";
 import cors from "cors";
 import { verifyClaim } from "./ai/index.js";
-import type { VerifyClaimResult } from "./ai/index.js";
+import type { VerifyClaimResult, ClaimInput } from "./ai/index.js";
 import { saveVerification, getHistory } from "./db/verifications.js";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// Raised from the default 100kb — base64-encoded screenshots and audio
+// clips are much bigger than plain claim text.
+app.use(express.json({ limit: "10mb" }));
 
 app.get("/", (req, res) => {
   res.json({
@@ -29,20 +31,29 @@ function toHarmLevel(verdict: VerifyClaimResult["verdict"]): "Low" | "Medium" | 
 }
 
 app.post("/verify-claim", async (req, res) => {
-  const claim = req.body.claim;
+  const { claim, imageBase64, audioBase64, mimeType } = req.body;
 
-  if (!claim || !claim.trim()) {
+  let input: ClaimInput;
+  if (imageBase64) {
+    input = { kind: "image", imageBase64, mimeType: mimeType || "image/jpeg" };
+  } else if (audioBase64) {
+    input = { kind: "audio", audioBase64, mimeType: mimeType || "audio/webm" };
+  } else if (claim && claim.trim()) {
+    input = { kind: "text", text: claim };
+  } else {
     return res.status(400).json({
-      error: "Claim is required",
+      error: "claim, imageBase64, or audioBase64 is required",
     });
   }
 
   try {
     const startTime = Date.now();
-    const result = await verifyClaim(claim);
+    const result = await verifyClaim(input);
     const harmLevel = toHarmLevel(result.verdict);
 
-    await saveVerification(claim, result, harmLevel);
+    // Save the claim Gemini actually extracted, not the raw input (which
+    // may have been an image/audio blob, not text).
+    await saveVerification(result.claim, result, harmLevel);
 
     res.json({
       verdict: result.verdict,

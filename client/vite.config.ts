@@ -16,6 +16,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         history: path.resolve(import.meta.dirname, 'history.html'),
+        offscreen: path.resolve(import.meta.dirname, 'public/offscreen.html'),
       },
     },
   },
