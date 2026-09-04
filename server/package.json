@@ -1,0 +1,20 @@
+{
+  "name": "healthclaim-server",
+  "version": "1.0.0",
+  "description": "AI and evidence pipeline for HealthClaim",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/test.ts",
+    "build": "tsc",
+    "start": "node dist/test.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "dotenv": "^17.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}
