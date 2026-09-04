@@ -11,10 +11,12 @@
   "dependencies": {
     "express": "^5.2.1",
     "@google/genai": "^1.0.0",
-    "dotenv": "^17.0.0"
+    "dotenv": "^17.0.0",
+    "cors": "^2.8.5"
   },
   "devDependencies": {
     "@types/express": "^5.0.0",
+    "@types/cors": "^2.8.17",
     "@types/node": "^24.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"

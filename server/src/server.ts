@@ -1,7 +1,11 @@
 import express from "express";
+import cors from "cors";
+import { verifyClaim } from "./ai/index.js";
+import type { VerifyClaimResult } from "./ai/index.js";
 
 const app = express();
 
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -10,22 +14,48 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/verify-claim", (req, res) => {
+function toHarmLevel(verdict: VerifyClaimResult["verdict"]): "Low" | "Medium" | "High" {
+  switch (verdict) {
+    case "Supported":
+      return "Low";
+    case "Partially Supported":
+      return "Medium";
+    case "Insufficient Evidence":
+      return "Medium";
+    case "Potentially Harmful":
+      return "High";
+  }
+}
+
+app.post("/verify-claim", async (req, res) => {
   const claim = req.body.claim;
 
-  if (!claim) {
+  if (!claim || !claim.trim()) {
     return res.status(400).json({
       error: "Claim is required",
     });
   }
 
-  res.json({
-    verdict: "Insufficient Evidence",
-    harmLevel: "Medium",
-    explanation: "This is a mock response. AI verification will be connected later.",
-    sources: [],
-    analyzedInMs: 100,
-  });
+  try {
+    const startTime = Date.now();
+    const result = await verifyClaim(claim);
+
+    res.json({
+      verdict: result.verdict,
+      harmLevel: toHarmLevel(result.verdict),
+      explanation: result.explanation,
+      sources: result.sources.map((s) => ({
+        name: s.source || s.title,
+        url: s.url,
+      })),
+      analyzedInMs: Date.now() - startTime,
+    });
+  } catch (err) {
+    console.error("verify-claim failed:", err);
+    res.status(500).json({
+      error: "Verification failed. Please try again.",
+    });
+  }
 });
 
 const PORT = 3000;
