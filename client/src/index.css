@@ -51,5 +51,37 @@ body {
   animation: cta-glow 3s ease-in-out infinite;
 }
 
+/* Loading screen (v3 pulse mark) — kept 1:1 with the approved mock */
+@keyframes hc-ring-out {
+  0%, 100% { transform: scale(1); opacity: 0.12; }
+  50% { transform: scale(1.22); opacity: 0.03; }
+}
+@keyframes hc-ring-mid {
+  0%, 100% { transform: scale(1); opacity: 0.22; }
+  50% { transform: scale(1.12); opacity: 0.07; }
+}
+@keyframes hc-fade {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes hc-pulse-draw {
+  0% { stroke-dashoffset: 120; }
+  60% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -120; }
+}
+.hc-out {
+  animation: hc-ring-out 2.6s ease-in-out infinite;
+}
+.hc-mid {
+  animation: hc-ring-mid 2.6s ease-in-out infinite 0.2s;
+}
+.hc-msg {
+  animation: hc-fade 2.2s ease-in-out infinite;
+}
+.hc-pulse-line {
+  stroke-dasharray: 120;
+  animation: hc-pulse-draw 1.8s linear infinite;
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }

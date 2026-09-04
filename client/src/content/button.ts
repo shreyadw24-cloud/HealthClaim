@@ -9,8 +9,8 @@ export interface VerifyButtonHandle {
 }
 
 const ICON_SHIELD = `
-  <svg width="11" height="11" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M8 1.5l5.5 2v4c0 3.6-2.3 6.4-5.5 7-3.2-.6-5.5-3.4-5.5-7v-4l5.5-2z" fill="#2DD4BF" opacity="0.9"/>
+  <svg width="13" height="7" viewBox="0 0 92 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <polyline points="0,24 16,24 22,10 28,38 34,4 40,24 92,24" stroke="#20B2AA" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
   </svg>
 `;
 

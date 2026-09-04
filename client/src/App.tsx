@@ -21,6 +21,7 @@ async function verifyClaim(claim: string): Promise<VerifyResult> {
   // return res.json();
 
   await new Promise((r) => setTimeout(r, 3000));
+  throw new Error("test error");
   return {
     verdict: "Potentially Harmful",
     harmLevel: "High",
@@ -56,7 +57,7 @@ type Status = "supported" | "partial" | "insufficient" | "harmful";
 const LOADING_MSGS = ["Extracting claim…", "Retrieving evidence…", "Analyzing…"];
 
 const STRENGTH_DOT: Record<string, string> = {
-  High: "bg-[#2DD4BF]",
+  High: "bg-[#20B2AA]",
   Moderate: "bg-amber-400",
   Limited: "bg-orange-400",
 };
@@ -78,39 +79,74 @@ function GrainLayer() {
   );
 }
 
-// ── Shield + pulse logo ──────────────────────────────────────────────────────
-function ShieldLogo({ size = 32 }: { size?: number }) {
+// ── Pulse mark + logo badge ──────────────────────────────────────────────────
+function PulseIcon({
+  size = 24,
+  color = "#FFFFFF",
+  strokeWidth = 2.4,
+}: {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-label="HealthClaim shield logo">
-      <path
-        d="M20 3L5.5 9.5V22C5.5 30 11.8 37 20 39C28.2 37 34.5 30 34.5 22V9.5L20 3Z"
-        fill="rgba(45,212,191,0.11)"
-        stroke="#2DD4BF"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M9 21H14L16 15L18.5 27.5L20.5 17L22.2 22L24 21H31"
-        stroke="#2DD4BF"
-        strokeWidth="1.5"
+    <svg width={size} height={size * 0.52} viewBox="0 0 92 48" fill="none" aria-hidden="true">
+      <polyline
+        points="0,24 16,24 22,10 28,38 34,4 40,24 92,24"
+        stroke={color}
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
+        fill="none"
       />
     </svg>
   );
+}
+
+function LogoBadge({ size = 64, radius }: { size?: number; radius?: number }) {
+  const r = radius ?? Math.round(size * 0.3);
+  return (
+    <div
+      aria-label="HealthClaim logo"
+      className="flex items-center justify-center flex-none"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: r,
+        background: "linear-gradient(135deg, #3ED6C9 0%, #20B2AA 60%, #178F88 100%)",
+        boxShadow: "0 12px 24px -8px rgba(32,178,170,0.5)",
+      }}
+    >
+      <PulseIcon size={Math.round(size * 0.46)} color="#FFFFFF" strokeWidth={Math.max(1.8, size * 0.045)} />
+    </div>
+  );
+}
+
+// Backwards-compatible alias so any existing usage keeps working.
+function ShieldLogo({ size = 32 }: { size?: number }) {
+  return <LogoBadge size={size} radius={Math.round(size * 0.32)} />;
 }
 
 // ── Error ─────────────────────────────────────────────────────────────────────
 function ErrorScreen({ onRetry }: { onRetry: () => void }) {
   return (
     <div
-      className="relative w-[360px] h-[600px] bg-[#FAFAF7] overflow-hidden flex flex-col items-center justify-center gap-5 rounded-2xl"
-      style={{ boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)", border: "1px solid rgba(11,31,58,0.06)" }}
+      className="relative w-[360px] h-[600px] overflow-hidden flex flex-col items-center justify-center gap-5 rounded-[22px]"
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
+        boxShadow: "0 4px 14px rgba(11,31,58,0.05), 0 24px 60px -20px rgba(11,31,58,0.22)",
+        border: "1px solid rgba(32,178,170,0.16)",
+      }}
     >
+      <div
+        aria-hidden="true"
+        className="absolute top-0 left-0 right-0 h-[3px]"
+        style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)", zIndex: 61 }}
+      />
       <GrainLayer />
       <div className="relative flex flex-col items-center gap-5" style={{ zIndex: 60 }}>
-        <div style={{ opacity: 0.55 }}>
-          <ShieldLogo size={40} />
+        <div style={{ opacity: 0.6 }}>
+          <ShieldLogo size={56} />
         </div>
         <div className="flex flex-col items-center gap-1.5 text-center px-10">
           <h2
@@ -125,8 +161,12 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
         </div>
         <button
           onClick={onRetry}
-          className="mt-1 px-5 py-2.5 rounded-full font-inter text-[12px] font-medium transition-all duration-150"
-          style={{ background: "#0B1F3A", color: "#FAFAF7" }}
+          className="mt-1 px-5 py-2.5 rounded-full font-inter text-[12px] font-semibold transition-all duration-150 hover:scale-[1.03] active:scale-[0.97]"
+          style={{
+            background: "linear-gradient(135deg, #3ED6C9 0%, #20B2AA 55%, #178F88 100%)",
+            color: "#FFFFFF",
+            boxShadow: "0 10px 20px -8px rgba(32,178,170,0.5)",
+          }}
         >
           Try again
         </button>
@@ -139,100 +179,129 @@ function ErrorScreen({ onRetry }: { onRetry: () => void }) {
 function HomeScreen({ onVerify, onViewHistory }: { onVerify: () => void; onViewHistory: () => void }) {
   return (
     <div
-      className="relative w-[340px] overflow-hidden flex flex-col rounded-[22px]"
+      className="relative w-[340px] overflow-hidden rounded-[22px]"
       style={{
         background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
-        border: "1px solid rgba(32,178,170,0.16)",
         boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
+        border: "1px solid rgba(32,178,170,0.16)",
       }}
     >
-      <div className="h-[3px] w-full" style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)" }} />
+      <div
+        aria-hidden="true"
+        className="h-[3px] w-full"
+        style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)" }}
+      />
 
-      <div className="flex items-center justify-between" style={{ padding: "16px 18px 0" }}>
+      {/* Top row */}
+      <div className="flex items-center justify-between px-[18px] pt-4">
         <div className="flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#20B2AA" }} />
-          <span className="font-inter text-[10px] uppercase" style={{ letterSpacing: "0.14em", color: "#8A8A86" }}>
+          <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: "#20B2AA" }} />
+          <span className="font-inter text-[10px] uppercase tracking-[0.14em]" style={{ color: "#8a8a86" }}>
             Trusted evidence
           </span>
         </div>
-        <button onClick={onViewHistory} aria-label="View history" style={{ color: "#B0B0AA" }}>
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M2.8 8A5.2 5.2 0 1 1 4.4 11.8" />
-            <path d="M2.8 5.2V8H5.6" />
-            <path d="M8 5.2V8l2.1 1.3" />
+        <button onClick={onViewHistory} aria-label="View history" className="flex items-center justify-center">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#b0b0aa" strokeWidth="1.3" strokeLinecap="round">
+            <circle cx="8" cy="8" r="6.5" />
+            <path d="M8 4.5V8l2.5 1.5" strokeLinejoin="round" />
           </svg>
         </button>
       </div>
 
-      <div className="flex flex-col items-center" style={{ padding: "22px 30px 26px" }}>
-        <div
-          className="relative flex items-center justify-center mb-4"
-          style={{
-            width: 72,
-            height: 72,
-            borderRadius: 20,
-            background: "radial-gradient(circle at 30% 25%, #3ED6C9, #20B2AA 60%, #178F88 100%)",
-            boxShadow: "0 14px 26px -8px rgba(32,178,170,0.5)",
-          }}
-        >
-          <div className="absolute" style={{ inset: -6, borderRadius: 26, border: "1px solid rgba(32,178,170,0.18)" }} />
-          <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
-            <path d="M20 3L5.5 9.5V22C5.5 30 11.8 37 20 39C28.2 37 34.5 30 34.5 22V9.5L20 3Z" fill="rgba(255,255,255,0.12)" stroke="#FFFFFF" strokeWidth="1.6" strokeLinejoin="round" />
-            <path d="M9 21H14L16 15L18.5 27.5L20.5 17L22.2 22L24 21H31" stroke="#FFFFFF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      {/* Content */}
+      <div className="flex flex-col items-center px-[30px] pt-[22px] pb-[26px]">
+        {/* Logo badge */}
+        <div className="relative flex items-center justify-center mb-4">
+          <div
+            aria-hidden="true"
+            className="absolute rounded-[26px]"
+            style={{ inset: "-6px", border: "1px solid rgba(32,178,170,0.18)" }}
+          />
+          <div
+            className="w-[72px] h-[72px] rounded-[20px] flex items-center justify-center"
+            style={{
+              background: "radial-gradient(circle at 30% 25%, #3ED6C9, #20B2AA 60%, #178F88 100%)",
+              boxShadow: "0 14px 26px -8px rgba(32,178,170,0.5)",
+            }}
+          >
+            <svg width="34" height="34" viewBox="0 0 40 40" fill="none">
+              <path
+                d="M20 3L5.5 9.5V22C5.5 30 11.8 37 20 39C28.2 37 34.5 30 34.5 22V9.5L20 3Z"
+                fill="rgba(255,255,255,0.12)"
+                stroke="#FFFFFF"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M9 21H14L16 15L18.5 27.5L20.5 17L22.2 22L24 21H31"
+                stroke="#FFFFFF"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
 
-        <h1 className="font-fraunces" style={{ fontSize: 26, fontWeight: 600, color: "#0B1F3A", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+        <h1 className="font-fraunces text-[26px] font-semibold text-[#0B1F3A] mb-1" style={{ letterSpacing: "-0.02em" }}>
           HealthClaim
         </h1>
-        <p className="font-fraunces italic" style={{ fontSize: 13, color: "#178F88", margin: "0 0 16px", letterSpacing: "0.01em" }}>
+        <p className="font-fraunces italic text-[13px] mb-4" style={{ color: "#178F88", letterSpacing: "0.01em" }}>
           Verify before you follow.
         </p>
 
-        <div className="flex items-center gap-2.5 w-full mb-4" style={{ maxWidth: 190 }}>
+        {/* Separator */}
+        <div className="flex items-center gap-2.5 w-full max-w-[190px] mb-4">
           <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.12)" }} />
           <div className="w-1 h-1 rounded-full" style={{ background: "#20B2AA" }} />
           <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.12)" }} />
         </div>
 
-        <p className="text-center" style={{ fontSize: 12.5, color: "#6B6A63", lineHeight: 1.6, maxWidth: 230, margin: "0 0 22px" }}>
+        <p
+          className="text-center font-inter text-[12.5px] leading-[1.6] max-w-[230px] mb-[22px]"
+          style={{ color: "#6b6a63" }}
+        >
           AI-powered evidence review for health claims found on social media and the web.
         </p>
 
         <button
           onClick={onVerify}
-          className="w-full flex items-center justify-center gap-2"
+          className="cta-glow w-full py-[14px] rounded-[14px] font-inter font-semibold text-[13.5px] text-white flex items-center justify-center gap-2 transition-transform duration-200 hover:scale-[1.02] active:scale-[0.97]"
           style={{
-            padding: "14px 0",
-            border: "none",
-            borderRadius: 14,
-            background: "linear-gradient(135deg, #3ED6C9, #20B2AA 55%, #178F88)",
-            color: "#FFFFFF",
-            fontWeight: 600,
-            fontSize: 13.5,
+            background: "linear-gradient(135deg, #3ED6C9 0%, #20B2AA 55%, #178F88 100%)",
             letterSpacing: "0.02em",
             boxShadow: "0 12px 24px -8px rgba(32,178,170,0.55), inset 0 1px 0 rgba(255,255,255,0.2)",
           }}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 3a12 12 0 0 0 8.5 3a12 12 0 0 1 -8.5 15a12 12 0 0 1 -8.5 -15a12 12 0 0 0 8.5 -3" />
-            <path d="M9 12l2 2l4 -4" />
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z" />
+            <path d="m9 12 2 2 4-4" />
           </svg>
           Verify health claim
         </button>
 
+        {/* Trust sources */}
         <div className="flex items-center gap-3 mt-5" style={{ opacity: 0.6 }}>
-          <span className="uppercase" style={{ fontSize: 9.5, letterSpacing: "0.08em", color: "#0B1F3A" }}>Evidence from</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>WHO</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>CDC</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>NIH</span>
-          <span style={{ fontSize: 10, fontWeight: 600, color: "#0B1F3A" }}>PubMed</span>
+          <span className="font-inter text-[9.5px] uppercase tracking-[0.08em] text-[#0B1F3A]">
+            Evidence from
+          </span>
+          {["WHO", "CDC", "NIH", "PubMed"].map((s) => (
+            <span key={s} className="font-inter text-[10px] font-semibold text-[#0B1F3A]">
+              {s}
+            </span>
+          ))}
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-2" style={{ borderTop: "1px solid rgba(32,178,170,0.1)", padding: "12px 0" }}>
+      {/* Footer */}
+      <div
+        className="flex items-center justify-center gap-2 py-3"
+        style={{ borderTop: "1px solid rgba(32,178,170,0.1)" }}
+      >
         <div className="w-4 h-px" style={{ background: "rgba(11,31,58,0.18)" }} />
-        <span className="uppercase" style={{ fontSize: 9, letterSpacing: "0.14em", color: "#B0B0AA" }}>Select text to analyze</span>
+        <span className="font-inter text-[9px] uppercase tracking-[0.14em]" style={{ color: "#b0b0aa" }}>
+          Select text to analyze
+        </span>
         <div className="w-4 h-px" style={{ background: "rgba(11,31,58,0.18)" }} />
       </div>
     </div>
@@ -257,35 +326,55 @@ function LoadingScreen() {
   }, []);
 
   return (
-    <div className="relative w-[360px] h-[600px] bg-[#FAFAF7] overflow-hidden flex flex-col items-center justify-center rounded-2xl" style={{ boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)", border: "1px solid rgba(11,31,58,0.06)" }}>
-      <GrainLayer />
-      <div className="relative flex flex-col items-center gap-9" style={{ zIndex: 60 }}>
+    <div
+      className="relative w-[340px] h-[520px] overflow-hidden flex flex-col rounded-[22px]"
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
+        boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
+        border: "1px solid rgba(32,178,170,0.16)",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        className="h-[3px] w-full"
+        style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)" }}
+      />
+      <div className="flex-1 flex flex-col items-center justify-center gap-7">
         {/* Pulsing rings */}
-        <div className="relative flex items-center justify-center">
+        <div className="relative flex items-center justify-center" style={{ width: "128px", height: "128px" }}>
           <div
             className="ring-pulse-outer absolute w-32 h-32 rounded-full"
-            style={{ border: "1px solid rgba(45,212,191,0.18)" }}
+            style={{ border: "1px solid rgba(32,178,170,0.28)" }}
           />
           <div
-            className="ring-pulse-mid absolute w-22 h-22 rounded-full"
+            className="ring-pulse-mid absolute rounded-full"
+            style={{ width: "96px", height: "96px", border: "1px solid rgba(32,178,170,0.4)" }}
+          />
+          <div
+            className="w-[72px] h-[72px] rounded-full flex items-center justify-center overflow-hidden"
             style={{
-              width: "88px",
-              height: "88px",
-              border: "1px solid rgba(45,212,191,0.28)",
+              background: "linear-gradient(135deg, #3ED6C9 0%, #20B2AA 60%, #178F88 100%)",
+              boxShadow: "0 14px 26px -8px rgba(32,178,170,0.5)",
             }}
-          />
-          <div
-            className="ring-pulse-inner w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ border: "1.5px solid rgba(45,212,191,0.65)" }}
           >
-            <ShieldLogo size={26} />
+            <svg width="46" height="24" viewBox="0 0 92 48" fill="none">
+              <polyline
+                className="pulse-line"
+                points="0,24 16,24 22,10 28,38 34,4 40,24 92,24"
+                stroke="#FFFFFF"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
           </div>
         </div>
 
         {/* Fading message */}
         <p
           className="font-fraunces text-[15px] italic text-[#0B1F3A] transition-opacity duration-300"
-          style={{ opacity: fade ? 0.6 : 0, letterSpacing: "0.01em" }}
+          style={{ opacity: fade ? 0.9 : 0, letterSpacing: "0.01em" }}
         >
           {LOADING_MSGS[msgIdx]}
         </p>
@@ -295,13 +384,25 @@ function LoadingScreen() {
           {LOADING_MSGS.map((_, i) => (
             <div
               key={i}
-              className="rounded-full transition-all duration-400"
+              className="rounded-[4px] transition-all duration-400"
               style={{
                 width: i === msgIdx ? "16px" : "4px",
                 height: "4px",
-                background: i === msgIdx ? "#2DD4BF" : "rgba(45,212,191,0.2)",
+                background: i === msgIdx ? "#20B2AA" : "rgba(32,178,170,0.25)",
               }}
             />
+          ))}
+        </div>
+
+        {/* Trust sources */}
+        <div className="flex items-center gap-3" style={{ opacity: 0.55 }}>
+          <span className="font-inter text-[9.5px] uppercase tracking-[0.08em] text-[#0B1F3A]">
+            Cross-checking
+          </span>
+          {["WHO", "CDC", "NIH"].map((s) => (
+            <span key={s} className="font-inter text-[10px] font-semibold text-[#0B1F3A]">
+              {s}
+            </span>
           ))}
         </div>
       </div>
@@ -310,42 +411,50 @@ function LoadingScreen() {
 }
 
 // ── Result ───────────────────────────────────────────────────────────────────
-const STATUS_STYLE: Record<VerifyResult["verdict"], { pillCls: string; pillBorder: string; barFrom: string; barTo: string; barWidth: string; borderColor: string; accentText: string }> = {
+const STATUS_STYLE: Record<VerifyResult["verdict"], { pillBg: string; pillText: string; pillBorder: string; barFrom: string; barTo: string; barWidth: string; borderColor: string; accentText: string; dot: string }> = {
   Supported: {
-    pillCls: "bg-emerald-50 text-emerald-700",
-    pillBorder: "rgba(16,185,129,0.35)",
-    barFrom: "#10b981",
-    barTo: "#34d399",
+    pillBg: "#E8F7F5",
+    pillText: "#0F6E56",
+    pillBorder: "rgba(32,178,170,0.3)",
+    barFrom: "#20B2AA",
+    barTo: "#3ED6C9",
     barWidth: "88%",
-    borderColor: "rgba(52,211,153,0.55)",
-    accentText: "#34d399",
+    borderColor: "#20B2AA",
+    accentText: "#0F6E56",
+    dot: "#20B2AA",
   },
   "Partially Supported": {
-    pillCls: "bg-amber-50 text-amber-700",
-    pillBorder: "rgba(217,119,6,0.3)",
-    barFrom: "#d97706",
-    barTo: "#fbbf24",
+    pillBg: "#FDF3E3",
+    pillText: "#854F0B",
+    pillBorder: "rgba(239,159,39,0.35)",
+    barFrom: "#EF9F27",
+    barTo: "#FBC96B",
     barWidth: "58%",
-    borderColor: "rgba(251,191,36,0.55)",
-    accentText: "#fbbf24",
+    borderColor: "#EF9F27",
+    accentText: "#854F0B",
+    dot: "#EF9F27",
   },
   "Insufficient Evidence": {
-    pillCls: "bg-slate-100 text-slate-600",
-    pillBorder: "rgba(100,116,139,0.3)",
-    barFrom: "rgba(11,31,58,0.4)",
-    barTo: "rgba(11,31,58,0.2)",
+    pillBg: "#F1F1EF",
+    pillText: "#57564F",
+    pillBorder: "rgba(87,86,79,0.25)",
+    barFrom: "#9a988e",
+    barTo: "#c7c5ba",
     barWidth: "35%",
-    borderColor: "rgba(11,31,58,0.3)",
-    accentText: "rgba(11,31,58,0.5)",
+    borderColor: "#9a988e",
+    accentText: "#57564F",
+    dot: "#9a988e",
   },
   "Potentially Harmful": {
-    pillCls: "bg-rose-50 text-rose-700",
-    pillBorder: "rgba(244,63,94,0.3)",
-    barFrom: "#be123c",
-    barTo: "#fb7185",
+    pillBg: "#FCEBEB",
+    pillText: "#A32D2D",
+    pillBorder: "rgba(226,75,74,0.3)",
+    barFrom: "#E24B4A",
+    barTo: "#F09595",
     barWidth: "8%",
-    borderColor: "rgba(251,113,133,0.55)",
-    accentText: "#fb7185",
+    borderColor: "#E24B4A",
+    accentText: "#A32D2D",
+    dot: "#E24B4A",
   },
 };
 
@@ -396,27 +505,42 @@ function ResultScreen({
   ];
 
   return (
-    <div className="relative w-[360px] h-[600px] bg-[#FAFAF7] overflow-hidden flex flex-col rounded-2xl" style={{ boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)", border: "1px solid rgba(11,31,58,0.06)" }}>
-      <GrainLayer />
+    <div
+      className="relative w-[340px] overflow-hidden flex flex-col rounded-[22px]"
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
+        boxShadow: "0 24px 60px -20px rgba(11,31,58,0.22), 0 4px 14px rgba(11,31,58,0.05)",
+        border: "1px solid rgba(32,178,170,0.16)",
+      }}
+    >
+      <div
+        aria-hidden="true"
+        className="h-[3px] w-full"
+        style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)" }}
+      />
 
       {/* Header */}
       <div
-        className="relative flex items-center justify-between px-4 pt-4 pb-3"
-        style={{ borderBottom: "1px solid rgba(11,31,58,0.07)", zIndex: 60 }}
+        className="flex items-center justify-between px-[18px] py-[14px]"
+        style={{ borderBottom: "1px solid rgba(32,178,170,0.12)" }}
       >
         <div className="flex items-center gap-2">
-          <ShieldLogo size={22} />
-          <span className="font-fraunces text-[13px] text-[#0B1F3A]" style={{ opacity: 0.65 }}>
+          <div
+            className="w-[26px] h-[26px] rounded-[9px] flex items-center justify-center overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #3ED6C9, #20B2AA 60%, #178F88)" }}
+          >
+            <svg width="16" height="9" viewBox="0 0 92 48" fill="none">
+              <polyline points="0,24 16,24 22,10 28,38 34,4 40,24 92,24" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+          </div>
+          <span className="font-fraunces text-[13.5px] font-medium text-[#0B1F3A]">
             HealthClaim
           </span>
         </div>
         <button
           onClick={onClose}
-          className="w-7 h-7 flex items-center justify-center rounded-full transition-colors"
-          style={{
-            border: "1px solid rgba(11,31,58,0.1)",
-            color: "rgba(11,31,58,0.35)",
-          }}
+          className="w-[26px] h-[26px] flex items-center justify-center rounded-full transition-colors"
+          style={{ border: "1px solid rgba(11,31,58,0.12)", color: "#8a8a86" }}
           aria-label="Close"
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
@@ -426,93 +550,81 @@ function ResultScreen({
         </button>
       </div>
 
-      {/* Scrollable body */}
-      <div
-        className="relative flex-1 overflow-y-auto scrollbar-hide px-4 py-4 space-y-4"
-        style={{ zIndex: 60 }}
-      >
+      {/* Body */}
+      <div className="px-[18px] py-4">
         {/* Claim card */}
         <div
           className="rounded-2xl p-4"
           style={{
-            background: "rgba(11,31,58,0.03)",
-            border: "1px solid rgba(11,31,58,0.09)",
+            background: "#FFFFFF",
+            border: "1px solid rgba(11,31,58,0.08)",
+            boxShadow: "0 2px 8px rgba(11,31,58,0.04)",
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2.5">
             <span
-              className="font-inter text-[9px] font-medium text-[#0B1F3A] tracking-[0.14em] uppercase"
-              style={{ opacity: 0.32 }}
+              className="font-inter text-[9.5px] font-semibold text-[#9a988e] tracking-[0.14em] uppercase"
             >
               Claim Detected
             </span>
-            <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.07)" }} />
+            <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.08)" }} />
           </div>
-          <p className="font-fraunces text-[15px] font-medium text-[#0B1F3A] leading-[1.55]" style={{ opacity: 0.88 }}>
+          <p className="font-fraunces text-[15px] font-medium text-[#0B1F3A] leading-[1.55]">
             {claim}
           </p>
         </div>
 
         {/* Status + confidence */}
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 mt-3.5">
           <span
-            className={`self-start px-3 py-1 rounded-full font-inter text-[11px] font-medium ${s.pillCls}`}
-            style={{ border: `1px solid ${s.pillBorder}` }}
+            className="self-start px-3.5 py-1.5 rounded-full font-inter text-[11.5px] font-semibold"
+            style={{ background: s.pillBg, color: s.pillText, border: `1px solid ${s.pillBorder}` }}
           >
             {result.verdict}
           </span>
+          <div className="flex items-center justify-between mt-1">
+            <span className="font-inter text-[10.5px] text-[#9a988e]">Evidence confidence</span>
+          </div>
           <div
-            className="h-[3px] rounded-full overflow-hidden"
+            className="h-[5px] rounded-[4px] overflow-hidden"
             style={{ background: "rgba(11,31,58,0.07)" }}
           >
             <div
-              className="h-full rounded-full transition-all duration-1000"
+              className="h-full rounded-[4px] transition-all duration-1000"
               style={{
                 width: s.barWidth,
                 background: `linear-gradient(90deg, ${s.barFrom}, ${s.barTo})`,
               }}
             />
           </div>
-          <span
-            className="font-inter text-[9.5px] text-[#0B1F3A] tracking-[0.06em]"
-            style={{ opacity: 0.28 }}
-          >
-            Evidence confidence
-          </span>
         </div>
 
         {/* What Evidence Says */}
         <div
-          className="pl-3"
-          style={{ borderLeft: `2px solid ${s.borderColor}` }}
+          className="pl-[14px] mt-4"
+          style={{ borderLeft: `3px solid ${s.borderColor}` }}
         >
           <p
-            className="font-inter text-[9px] font-medium uppercase tracking-[0.13em] mb-2"
-            style={{ color: s.accentText, opacity: 0.75 }}
+            className="font-inter text-[10.5px] font-semibold uppercase tracking-[0.1em]"
+            style={{ color: s.accentText }}
           >
             What Evidence Says
           </p>
-          <p
-            className="font-inter text-[12px] text-[#0B1F3A] leading-[1.72]"
-            style={{ opacity: 0.62 }}
-          >
+          <p className="font-inter text-[13px] leading-[1.6] mt-1.5" style={{ color: "#4a4a45" }}>
             {result.explanation}
           </p>
         </div>
 
         {/* Accordion */}
         <div
-          className="rounded-xl overflow-hidden"
+          className="rounded-xl overflow-hidden mt-3.5"
           style={{ border: "1px solid rgba(11,31,58,0.08)" }}
         >
           <button
             onClick={() => setAccordionOpen((o) => !o)}
-            className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-[#0B1F3A]/[0.03]"
+            className="w-full flex items-center justify-between px-3.5 py-3 transition-colors hover:bg-[#0B1F3A]/[0.03]"
           >
-            <span
-              className="font-inter text-[11px] font-medium text-[#0B1F3A] hover:underline"
-              style={{ opacity: 0.48 }}
-            >
+            <span className="font-inter text-[12.5px] font-medium text-[#0B1F3A]">
               {isHarmful ? "Why is this harmful?" : "Nuances & Caveats"}
             </span>
             <svg
@@ -520,7 +632,7 @@ function ResultScreen({
               height="12"
               viewBox="0 0 12 12"
               fill="none"
-              stroke="rgba(11,31,58,0.3)"
+              stroke="#9a988e"
               strokeWidth="1.5"
               strokeLinecap="round"
               className="transition-transform duration-250"
@@ -550,107 +662,44 @@ function ResultScreen({
         {/* Evidence sources */}
         <div>
           <p
-            className="font-inter text-[9px] font-medium uppercase tracking-[0.13em] text-[#0B1F3A] mb-2.5"
-            style={{ opacity: 0.3 }}
+            className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5"
           >
             Evidence Sources
           </p>
-          <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-0.5">
+          <div className="flex gap-2">
             {result.sources.map((src, i) => (
-              <div
+              <a
                 key={i}
-                className="flex-none w-32 rounded-xl p-3 flex flex-col gap-2.5"
-                style={{
-                  background: "rgba(11,31,58,0.03)",
-                  border: "1px solid rgba(11,31,58,0.08)",
-                }}
+                href={src.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
+                style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-[16px] leading-none">🔗</span>
-                  <div className="w-2 h-2 rounded-full bg-[#2DD4BF]" />
-                </div>
-                <div>
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-inter text-[12px] font-medium text-[#0B1F3A] leading-none mb-1.5 block hover:underline"
-                    style={{ opacity: 0.82 }}
-                  >
-                    {src.name}
-                  </a>
-                  <span
-                    className="inline-block px-1.5 py-0.5 rounded-md font-inter text-[9px] text-[#0B1F3A] tracking-[0.04em]"
-                    style={{ background: "rgba(11,31,58,0.07)", opacity: 0.7 }}
-                  >
-                    Evidence Source
-                  </span>
-                </div>
-              </div>
+                <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
+                <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">Evidence source</div>
+              </a>
             ))}
           </div>
         </div>
-
-        {/* Risk banner — harmful only */}
-        {isHarmful && (
-          <div
-            className="rounded-xl p-3.5 flex items-start gap-3"
-            style={{
-              background: "rgba(244,63,94,0.08)",
-              border: "1px solid rgba(244,63,94,0.22)",
-            }}
-          >
-            <svg
-              className="flex-none mt-0.5"
-              width="15"
-              height="15"
-              viewBox="0 0 15 15"
-              fill="none"
-              stroke="#be123c"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-            >
-              <path d="M7.5 1.5L13.5 12.5H1.5L7.5 1.5Z" />
-              <line x1="7.5" y1="5.5" x2="7.5" y2="9" />
-              <circle cx="7.5" cy="11" r="0.6" fill="#be123c" />
-            </svg>
-            <p
-              className="font-fraunces text-[12px] italic leading-[1.65]"
-              style={{ color: "rgba(253,164,175,0.8)" }}
-            >
-              This claim describes a practice that poses serious health risks. Please consult a licensed medical professional before acting on any health information found online.
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Footer */}
       <div
-        className="relative flex items-center justify-around px-4 py-3"
-        style={{ borderTop: "1px solid rgba(11,31,58,0.07)", zIndex: 60 }}
+        className="flex items-center justify-around py-3"
+        style={{ borderTop: "1px solid rgba(32,178,170,0.12)" }}
       >
         {footerButtons.map(({ tip, icon }) => (
-          <div key={tip} className="relative group">
-            <button
-              className="flex flex-col items-center gap-1.5 px-3.5 py-2 rounded-xl border border-transparent transition-all duration-150 hover:border-[#0B1F3A]/10 hover:bg-[#0B1F3A]/[0.05]"
-              style={{ color: "rgba(11,31,58,0.3)" }}
-              aria-label={tip}
-            >
-              <span className="hover:text-[#0B1F3A]/70 transition-colors">{icon}</span>
-              <span className="font-inter text-[9px] tracking-[0.04em]">{tip.split(" ")[0]}</span>
-            </button>
-            {/* Tooltip */}
-            <div
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 rounded-lg font-inter text-[10px] whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-150"
-              style={{
-                background: "#0d2545",
-                border: "1px solid rgba(11,31,58,0.1)",
-                color: "rgba(11,31,58,0.58)",
-              }}
-            >
-              {tip}
-            </div>
-          </div>
+          <button
+            key={tip}
+            className="flex flex-col items-center gap-1"
+            aria-label={tip}
+          >
+            <span style={{ color: "#20B2AA" }}>{icon}</span>
+            <span className="font-inter text-[9.5px]" style={{ color: "#6b6a63" }}>
+              {tip.split(" ")[0]}
+            </span>
+          </button>
         ))}
       </div>
     </div>
@@ -667,17 +716,17 @@ const HISTORY: { id: number; claim: string; status: Status; time: string; source
   { id: 6, claim: `"Intermittent fasting reverses type 2 diabetes in most patients."`, status: "partial", time: "3 weeks ago", source: "YouTube" },
 ];
 
-const STATUS_DOT_CLS: Record<Status, string> = {
-  supported: "bg-emerald-400",
-  partial: "bg-amber-400",
-  insufficient: "bg-orange-400",
-  harmful: "bg-rose-400",
+const STATUS_DOT: Record<Status, string> = {
+  supported: "#20B2AA",
+  partial: "#EF9F27",
+  insufficient: "#9a988e",
+  harmful: "#E24B4A",
 };
-const STATUS_TEXT_CLS: Record<Status, string> = {
-  supported: "text-emerald-600",
-  partial: "text-amber-600",
-  insufficient: "text-orange-600",
-  harmful: "text-rose-600",
+const STATUS_TEXT: Record<Status, string> = {
+  supported: "#0F6E56",
+  partial: "#854F0B",
+  insufficient: "#57564F",
+  harmful: "#A32D2D",
 };
 const STATUS_LABEL: Record<Status, string> = {
   supported: "Supported",
@@ -706,60 +755,64 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div
-      className="relative w-full max-w-[760px] overflow-hidden rounded-2xl"
-      style={{ background: "#FAFAF7", border: "1px solid rgba(11,31,58,0.07)", boxShadow: "0 1px 2px rgba(11,31,58,0.04), 0 12px 32px -8px rgba(11,31,58,0.14), 0 24px 64px -16px rgba(11,31,58,0.10)" }}
+      className="relative w-full max-w-[680px] overflow-hidden rounded-[20px]"
+      style={{
+        background: "linear-gradient(180deg, #FFFFFF 0%, #F3FBFA 100%)",
+        border: "1px solid rgba(32,178,170,0.16)",
+        boxShadow: "0 24px 60px -20px rgba(11,31,58,0.18), 0 4px 14px rgba(11,31,58,0.05)",
+      }}
     >
-      <GrainLayer />
+      <div
+        aria-hidden="true"
+        className="h-[3px] w-full"
+        style={{ background: "linear-gradient(90deg, #20B2AA, #3ED6C9)" }}
+      />
 
       {/* Header */}
-      <div
-        className="relative flex items-center justify-between px-6 py-5"
-        style={{ borderBottom: "1px solid rgba(11,31,58,0.07)", zIndex: 60 }}
-      >
+      <div className="flex items-center justify-between px-6 py-[18px]">
         <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="w-7 h-7 flex items-center justify-center rounded-full transition-colors"
-            style={{ border: "1px solid rgba(11,31,58,0.1)", color: "rgba(11,31,58,0.4)" }}
+            className="w-[30px] h-[30px] flex items-center justify-center rounded-full transition-colors"
+            style={{ border: "1px solid rgba(11,31,58,0.12)", color: "#8a8a86" }}
             aria-label="Back"
           >
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="14" height="14" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
               <path d="M7.5 2.5L3 6l4.5 3.5" />
             </svg>
           </button>
-          <ShieldLogo size={26} />
+          <div
+            className="w-8 h-8 rounded-[10px] flex items-center justify-center overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #3ED6C9, #20B2AA 60%, #178F88)" }}
+          >
+            <svg width="18" height="10" viewBox="0 0 92 48" fill="none">
+              <polyline points="0,24 16,24 22,10 28,38 34,4 40,24 92,24" stroke="#FFFFFF" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </svg>
+          </div>
           <div>
-            <h2
-              className="font-fraunces text-[17px] font-medium text-[#0B1F3A] leading-none"
-              style={{ letterSpacing: "-0.02em", opacity: 0.9 }}
-            >
-              Claim History
+            <h2 className="font-fraunces text-[17px] font-semibold text-[#0B1F3A] leading-none">
+              Claim history
             </h2>
-            <p className="font-inter text-[11px] text-[#0B1F3A] mt-1" style={{ opacity: 0.32 }}>
+            <p className="font-inter text-[11.5px] mt-[3px]" style={{ color: "#9a988e" }}>
               {items.length} claims analyzed
             </p>
           </div>
         </div>
 
         {/* Filter pills */}
-        <div className="flex items-center gap-1.5">
+        <div
+          className="flex gap-1.5 rounded-full p-1"
+          style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.14)" }}
+        >
           {FILTERS.map((f) => (
             <button
               key={f}
               onClick={() => setActiveFilter(f)}
-              className="px-3 py-1.5 rounded-full font-inter text-[11px] border transition-all duration-150"
+              className="px-3.5 py-1.5 rounded-full font-inter text-[11.5px] transition-all duration-150"
               style={
                 activeFilter === f
-                  ? {
-                      borderColor: "rgba(45,212,191,0.4)",
-                      color: "#2DD4BF",
-                      background: "rgba(45,212,191,0.08)",
-                    }
-                  : {
-                      borderColor: "rgba(11,31,58,0.09)",
-                      color: "rgba(11,31,58,0.38)",
-                      background: "transparent",
-                    }
+                  ? { background: "#20B2AA", color: "#FFFFFF", fontWeight: 600 }
+                  : { color: "#6b6a63", fontWeight: 500 }
               }
             >
               {f}
@@ -770,19 +823,19 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
 
       {/* Column headers */}
       <div
-        className="relative grid px-6 py-2.5"
+        className="grid px-6 py-2"
         style={{
-          gridTemplateColumns: "1fr 120px 100px 88px",
+          gridTemplateColumns: "2.4fr 1fr 1fr 0.8fr",
           gap: "16px",
-          borderBottom: "1px solid rgba(11,31,58,0.05)",
-          zIndex: 60,
+          borderTop: "1px solid rgba(11,31,58,0.07)",
+          borderBottom: "1px solid rgba(11,31,58,0.07)",
         }}
       >
         {["Claim", "Status", "Source", "Date"].map((col) => (
           <span
             key={col}
-            className="font-inter text-[9px] font-medium uppercase tracking-[0.13em] text-[#0B1F3A]"
-            style={{ opacity: 0.24 }}
+            className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.12em]"
+            style={{ color: "#9a988e" }}
           >
             {col}
           </span>
@@ -790,29 +843,33 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Rows */}
-      <div className="relative divide-y divide-[#0B1F3A]/[0.06]" style={{ zIndex: 60 }}>
-        {filtered.map((item) => (
+      <div>
+        {filtered.map((item, i) => (
           <div
             key={item.id}
-            className="grid px-6 py-4 cursor-pointer group transition-colors hover:bg-[#0B1F3A]/[0.03]"
-            style={{ gridTemplateColumns: "1fr 120px 100px 88px", gap: "16px" }}
+            className="grid px-6 py-3.5 items-center transition-colors hover:bg-[#0B1F3A]/[0.02]"
+            style={{
+              gridTemplateColumns: "2.4fr 1fr 1fr 0.8fr",
+              gap: "16px",
+              borderBottom: i === filtered.length - 1 ? "none" : "1px solid rgba(11,31,58,0.05)",
+            }}
           >
-            <p
-              className="font-fraunces text-[13.5px] text-[#0B1F3A] leading-[1.42] line-clamp-2 group-hover:opacity-85 transition-opacity"
-              style={{ opacity: 0.65 }}
-            >
+            <p className="font-fraunces text-[13.5px] text-[#0B1F3A] leading-[1.42] line-clamp-2">
               {item.claim}
             </p>
-            <div className="flex items-center gap-2 self-start pt-0.5">
-              <div className={`w-1.5 h-1.5 rounded-full flex-none ${STATUS_DOT_CLS[item.status]}`} />
-              <span className={`font-inter text-[11px] ${STATUS_TEXT_CLS[item.status]}`}>
+            <div className="flex items-center gap-1.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full flex-none inline-block"
+                style={{ background: STATUS_DOT[item.status] }}
+              />
+              <span className="font-inter text-[12px] font-semibold" style={{ color: STATUS_TEXT[item.status] }}>
                 {STATUS_LABEL[item.status]}
               </span>
             </div>
-            <span className="font-inter text-[11px] text-[#0B1F3A] self-start pt-0.5" style={{ opacity: 0.28 }}>
+            <span className="font-inter text-[12px]" style={{ color: "#9a988e" }}>
               {item.source}
             </span>
-            <span className="font-inter text-[11px] text-[#0B1F3A] self-start pt-0.5" style={{ opacity: 0.22 }}>
+            <span className="font-inter text-[12px]" style={{ color: "#9a988e" }}>
               {item.time}
             </span>
           </div>
@@ -821,16 +878,16 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
 
       {/* Footer */}
       <div
-        className="relative flex items-center justify-between px-6 py-4"
-        style={{ borderTop: "1px solid rgba(11,31,58,0.07)", zIndex: 60 }}
+        className="flex items-center justify-between px-6 py-[14px] mt-2"
+        style={{ borderTop: "1px solid rgba(32,178,170,0.12)" }}
       >
-        <span className="font-inter text-[10px] text-[#0B1F3A]" style={{ opacity: 0.18 }}>
+        <span className="font-inter text-[11px]" style={{ color: "#b0b0aa" }}>
           Powered by HealthClaim AI · Clinical evidence sources only
         </span>
-        <button
-          className="font-inter text-[10px] transition-opacity"
-          style={{ color: "rgba(45,212,191,0.48)" }}
-        >
+        <button className="font-inter text-[11.5px] font-semibold flex items-center gap-1.5" style={{ color: "#178F88" }}>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 2v8m0 0-3-3m3 3 3-3M3 13h10" />
+          </svg>
           Export CSV
         </button>
       </div>
@@ -857,7 +914,7 @@ function DemoNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen)
           className="px-3 py-1.5 rounded-lg font-inter text-[11px] border transition-all duration-150"
           style={
             screen === id
-              ? { borderColor: "rgba(45,212,191,0.45)", color: "#2DD4BF", background: "rgba(45,212,191,0.1)" }
+              ? { borderColor: "rgba(32,178,170,0.45)", color: "#20B2AA", background: "rgba(32,178,170,0.1)" }
               : { borderColor: "rgba(11,31,58,0.1)", color: "rgba(11,31,58,0.38)", background: "transparent" }
           }
         >
@@ -892,8 +949,8 @@ export default function App() {
 
   return (
     <div
-      className="flex flex-col items-center py-6"
-      style={{ background: "#F3FBFA" }}
+      className="min-h-full flex flex-col items-center justify-center py-12 px-6"
+      style={{ background: "#EAF6F4" }}
     >
       {screen === "home" && <HomeScreen onVerify={handleVerify} onViewHistory={() => chrome.tabs.create({ url: chrome.runtime.getURL("history.html") })} />}
       {screen === "loading" && <LoadingScreen />}

@@ -6,9 +6,11 @@
 
 export const BRAND = {
   navy: "#0B1F3A",
-  teal: "#2DD4BF",
-  cream: "#EFEBE2",
-  card: "#FAFAF7",
+  teal: "#20B2AA",
+  tealLight: "#3ED6C9",
+  tealDark: "#178F88",
+  cream: "#EAF6F4",
+  card: "#FFFFFF",
   rose: "#fb7185",
   roseDark: "#be123c",
   emerald: "#34d399",
@@ -45,8 +47,8 @@ export const BUTTON_CSS = `
     gap: 6px;
     padding: 5px 10px;
     border-radius: 999px;
-    border: 1px solid rgba(45,212,191,0.45);
-    background: rgba(45,212,191,0.08);
+    border: 1px solid rgba(32,178,170,0.45);
+    background: rgba(32,178,170,0.08);
     color: ${BRAND.navy};
     font-size: 11.5px;
     font-weight: 500;
@@ -54,7 +56,7 @@ export const BUTTON_CSS = `
     line-height: 1;
     transition: background 0.15s ease, transform 0.1s ease;
   }
-  .hc-btn:hover { background: rgba(45,212,191,0.18); }
+  .hc-btn:hover { background: rgba(32,178,170,0.18); }
   .hc-btn:active { transform: scale(0.97); }
   .hc-btn[disabled] { opacity: 0.55; cursor: default; }
   .hc-btn-dot {
@@ -139,7 +141,7 @@ export const OVERLAY_CSS = `
   .hc-loading-text { font-size: 11.5px; opacity: 0.55; }
   .hc-ring {
     width: 28px; height: 28px; border-radius: 999px;
-    border: 2px solid rgba(45,212,191,0.25); border-top-color: ${BRAND.teal};
+    border: 2px solid rgba(32,178,170,0.25); border-top-color: ${BRAND.teal};
     animation: hc-spin 0.8s linear infinite;
   }
   .hc-error { font-size: 12px; padding: 10px 2px; opacity: 0.7; }
