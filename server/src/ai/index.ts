@@ -1,7 +1,6 @@
 import { extractClaim } from "./claimExtractor.js";
 import { extractClaimFromImage, extractClaimFromAudio } from "./mediaExtractor.js";
 import { classifyClaim } from "./classifier.js";
-import { explainClaim } from "./explainer.js";
 import { retrieveEvidence } from "../evidence/index.js";
 
 export interface VerifyClaimResult {
@@ -107,16 +106,10 @@ URL: ${item.url}`
           .join("\n\n")
       : "No evidence was retrieved.";
 
-  // STEP 4: Classify the claim.
+  // STEP 4: Classify + explain in one call (was 2 separate Gemini calls —
+  // merged to cut quota usage per verification by a third).
   const classification = await classifyClaim(
     extracted.claim,
-    evidenceText
-  );
-
-  // STEP 5: Generate the explanation.
-  const explanation = await explainClaim(
-    extracted.claim,
-    classification.verdict,
     evidenceText
   );
 
@@ -128,7 +121,7 @@ URL: ${item.url}`
     claim: extracted.claim,
     verdict: classification.verdict,
     confidence: classification.confidence,
-    explanation: explanation.explanation,
+    explanation: classification.explanation,
     sources: evidence.map((item) => ({
       title: item.title,
       source: item.source,

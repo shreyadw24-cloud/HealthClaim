@@ -19,7 +19,7 @@ type VerifyResult = {
 
 async function verifyClaim(claim: string): Promise<VerifyResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30_000);
+  const timeout = setTimeout(() => controller.abort(), 45_000);
   try {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
       method: "POST",

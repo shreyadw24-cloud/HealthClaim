@@ -10,6 +10,7 @@ export interface ClassificationResult {
   verdict: Verdict;
   confidence: number;
   reasoning: string;
+  explanation: string;
 }
 
 function cleanJsonResponse(text: string): string {
@@ -100,7 +101,8 @@ Required JSON:
 {
   "verdict": "Supported | Partially Supported | Insufficient Evidence | Potentially Harmful",
   "confidence": 0,
-  "reasoning": "short explanation"
+  "reasoning": "short internal reasoning, 1 sentence",
+  "explanation": "a user-facing explanation, 2 to 4 sentences. Understandable to a normal social media user, neutral and evidence-based, clearly distinguishing evidence from uncertainty, mentioning important missing context when relevant. Never diagnose the user or prescribe treatment, and avoid exaggerated certainty."
 }
 
 <untrusted_input>
@@ -129,6 +131,10 @@ ${evidenceText || "No evidence was retrieved."}
       reasoning:
         typeof parsed.reasoning === "string"
           ? parsed.reasoning.trim()
+          : "The available evidence was insufficient for a detailed explanation.",
+      explanation:
+        typeof parsed.explanation === "string" && parsed.explanation.trim()
+          ? parsed.explanation.trim()
           : "The available evidence was insufficient for a detailed explanation."
     };
   } catch {
@@ -136,7 +142,9 @@ ${evidenceText || "No evidence was retrieved."}
       verdict: "Insufficient Evidence",
       confidence: 0,
       reasoning:
-        "The classification response could not be safely parsed."
+        "The classification response could not be safely parsed.",
+      explanation:
+        "The available evidence was insufficient for a detailed explanation."
     };
   }
 }

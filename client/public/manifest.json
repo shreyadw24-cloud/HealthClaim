@@ -36,14 +36,6 @@
   "permissions": ["storage", "activeTab", "tabs", "scripting", "tabCapture", "offscreen"],
   "host_permissions": [
     "http://localhost:3000/*",
-    "https://twitter.com/*",
-    "https://x.com/*",
-    "https://www.instagram.com/*",
-    "https://www.reddit.com/*",
-    "https://www.youtube.com/*",
-    "https://www.tiktok.com/*",
-    "https://www.facebook.com/*",
-    "https://www.threads.net/*",
-    "https://www.linkedin.com/*"
+    "<all_urls>"
   ]
 }

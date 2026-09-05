@@ -9,7 +9,7 @@ export type VerifyClaimBody =
 // real headroom — but without a limit at all, a stalled network or a
 // hung backend leaves the "Verifying…" spinner running forever with no
 // way to cancel.
-const VERIFY_TIMEOUT_MS = 30_000;
+const VERIFY_TIMEOUT_MS = 45_000;
 
 export async function verifyClaim(body: VerifyClaimBody): Promise<VerifyResult> {
   const controller = new AbortController();
