@@ -99,7 +99,14 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
   }
 });
 
-app.get("/history", async (req, res) => {
+const historyLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.get("/history", historyLimiter, async (req, res) => {
   const history = await getHistory();
   res.json(history);
 });

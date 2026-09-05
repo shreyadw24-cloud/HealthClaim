@@ -18,13 +18,25 @@ type VerifyResult = {
 };
 
 async function verifyClaim(claim: string): Promise<VerifyResult> {
-  const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ claim }),
-  });
-  if (!res.ok) throw new Error("Verification failed");
-  return res.json();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+  try {
+    const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ claim }),
+      signal: controller.signal,
+    });
+    if (!res.ok) throw new Error("Verification failed");
+    return res.json();
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new Error("Verification timed out. Please try again.");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 type HistoryItem = { id: number; claim: string; status: Status; time: string; source: string };
@@ -1084,36 +1096,6 @@ export function HistoryScreen({ onBack }: { onBack: () => void }) {
           Export CSV
         </button>
       </div>
-    </div>
-  );
-}
-
-// ── Demo nav ──────────────────────────────────────────────────────────────────
-const NAV_ITEMS: { id: Screen; label: string }[] = [
-  { id: "home", label: "Home" },
-  { id: "loading", label: "Loading" },
-  { id: "result-supported", label: "Result · Supported" },
-  { id: "result-harmful", label: "Result · Harmful" },
-  { id: "history", label: "History Dashboard" },
-];
-
-function DemoNav({ screen, setScreen }: { screen: Screen; setScreen: (s: Screen) => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 mb-7">
-      {NAV_ITEMS.map(({ id, label }) => (
-        <button
-          key={id}
-          onClick={() => setScreen(id)}
-          className="px-3 py-1.5 rounded-lg font-inter text-[11px] border transition-all duration-150"
-          style={
-            screen === id
-              ? { borderColor: "rgba(32,178,170,0.45)", color: "#20B2AA", background: "rgba(32,178,170,0.1)" }
-              : { borderColor: "rgba(11,31,58,0.1)", color: "rgba(11,31,58,0.38)", background: "transparent" }
-          }
-        >
-          {label}
-        </button>
-      ))}
     </div>
   );
 }
