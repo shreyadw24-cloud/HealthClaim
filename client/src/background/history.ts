@@ -12,9 +12,14 @@ function verdictToStatus(v: VerifyResult["verdict"]): Status {
   return "harmful";
 }
 
+// Keeps chrome.storage.local from growing forever over months of use —
+// 300 entries is far more than the popup's History tab needs to show, and
+// keeps well under the storage quota.
+const MAX_HISTORY_ITEMS = 300;
+
 export async function saveToHistory(claim: string, result: VerifyResult, source: string) {
   const item: HistoryItem = {
-    id: Date.now(),
+    id: Date.now() * 1000 + Math.floor(Math.random() * 1000),
     claim,
     status: verdictToStatus(result.verdict),
     time: "Just now",
@@ -22,5 +27,5 @@ export async function saveToHistory(claim: string, result: VerifyResult, source:
   };
   const stored = await chrome.storage.local.get<{ history?: HistoryItem[] }>("history");
   const list: HistoryItem[] = stored?.history ?? [];
-  await chrome.storage.local.set({ history: [item, ...list] });
+  await chrome.storage.local.set({ history: [item, ...list].slice(0, MAX_HISTORY_ITEMS) });
 }

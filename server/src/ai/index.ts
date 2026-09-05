@@ -29,6 +29,36 @@ export type ClaimInput =
   | { kind: "image"; imageBase64: string; mimeType?: string }
   | { kind: "audio"; audioBase64: string; mimeType?: string };
 
+// Same underlying claim gets checked by many different users (a viral post
+// gets the same "does X cure Y" caption seen thousands of times), and each
+// full run costs 2-3 Gemini calls. Caching by the *extracted* claim text —
+// not the raw input, which differs per screenshot/recording even for the
+// same post — means a repeat claim skips evidence lookup and both
+// remaining Gemini calls entirely. This is process-local and resets on
+// restart; fine for a single-instance server, not meant to replace a real
+// shared cache if this ever runs multi-instance.
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+const resultCache = new Map<string, { result: VerifyClaimResult; expiresAt: number }>();
+
+function cacheKey(claim: string): string {
+  return claim.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function getCached(claim: string): VerifyClaimResult | undefined {
+  const key = cacheKey(claim);
+  const entry = resultCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    resultCache.delete(key);
+    return undefined;
+  }
+  return entry.result;
+}
+
+function setCached(claim: string, result: VerifyClaimResult): void {
+  resultCache.set(cacheKey(claim), { result, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
 export async function verifyClaim(
   input: ClaimInput
 ): Promise<VerifyClaimResult> {
@@ -48,6 +78,12 @@ export async function verifyClaim(
         return extractClaimFromAudio(input.audioBase64, input.mimeType);
     }
   })();
+
+  const cached = getCached(extracted.claim);
+  if (cached) {
+    console.log(`Claim served from cache in ${Date.now() - startTime} ms`);
+    return cached;
+  }
 
   // STEP 2: Retrieve evidence — use extracted keywords, not the full
   // sentence, since literature search engines match keywords far better
@@ -88,7 +124,7 @@ URL: ${item.url}`
     `Claim verified in ${Date.now() - startTime} ms`
   );
 
-  return {
+  const result: VerifyClaimResult = {
     claim: extracted.claim,
     verdict: classification.verdict,
     confidence: classification.confidence,
@@ -100,4 +136,7 @@ URL: ${item.url}`
       score: item.score
     }))
   };
+
+  setCached(extracted.claim, result);
+  return result;
 }

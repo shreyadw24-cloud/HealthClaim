@@ -124,13 +124,18 @@ async function searchMedlinePlus(
       /<content name="snippet"[^>]*>([\s\S]*?)<\/content>/
     );
     const urlMatch = doc.match(/url="([^"]+)"/);
+    const parsedUrl = urlMatch ? urlMatch[1] : null;
+    // Defense-in-depth: this URL comes from an external XML response we
+    // regex-parse rather than a real XML parser — only ever pass through
+    // http(s) links to the client, never something like a javascript: URL.
+    const safeUrl = parsedUrl && /^https?:\/\//i.test(parsedUrl) ? parsedUrl : "https://medlineplus.gov";
 
     return {
       title: titleMatch ? stripTags(titleMatch[1]) : "MedlinePlus health topic",
       snippet: snippetMatch
         ? stripTags(snippetMatch[1])
         : "Relevant MedlinePlus health topic found — see the linked page for details.",
-      url: urlMatch ? urlMatch[1] : "https://medlineplus.gov"
+      url: safeUrl
     };
   });
 }

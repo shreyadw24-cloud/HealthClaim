@@ -93,7 +93,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         claimLabel = "[image claim]";
         result = await verifyClaim({ imageBase64, mimeType: "image/jpeg" });
       } else {
-        // kind === "audio"
+        // kind === "audio" — an unmuted, playing <video> with no usable
+        // caption/on-screen text (see scan.ts's isAudibleVideo check):
+        // record a few seconds of the tab's own audio and let Gemini
+        // transcribe + extract the claim from that instead of a screenshot.
         const tab = sender.tab;
         if (tab?.id === undefined) {
           throw new Error("Could not identify the source tab.");

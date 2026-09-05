@@ -6,6 +6,8 @@ export async function saveVerification(
   result: VerifyClaimResult,
   harmLevel: "Low" | "Medium" | "High"
 ) {
+  if (!supabase) return; // history-saving disabled — see supabase.ts
+
   const { error } = await supabase.from("verifications").insert({
     claim,
     verdict: result.verdict,
@@ -20,6 +22,8 @@ export async function saveVerification(
 }
 
 export async function getHistory() {
+  if (!supabase) return [];
+
   const { data, error } = await supabase
     .from("verifications")
     .select("*")

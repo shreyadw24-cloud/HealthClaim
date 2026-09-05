@@ -883,10 +883,21 @@ function isValidUrl(source: string): boolean {
   }
 }
 
+// Excel/Sheets treats a cell starting with =, +, -, or @ as a formula —
+// a claim scraped from a social media post could contain any of those, so
+// prefix with a tab to neutralize it without changing the visible text.
+function csvSafeCell(value: string): string {
+  const escaped = value.replace(/"/g, '""');
+  const needsFormulaGuard = /^[=+\-@]/.test(escaped);
+  return `"${needsFormulaGuard ? "\t" + escaped : escaped}"`;
+}
+
 function exportCsv(items: HistoryItem[]) {
   const header = "Claim,Status,Source,Time\n";
   const rows = items
-    .map((i) => `"${i.claim.replace(/"/g, '""')}",${STATUS_LABEL[i.status]},${i.source},${formatRelativeTime(i)}`)
+    .map((i) =>
+      [csvSafeCell(i.claim), csvSafeCell(STATUS_LABEL[i.status]), csvSafeCell(i.source), csvSafeCell(formatRelativeTime(i))].join(","),
+    )
     .join("\n");
   const blob = new Blob([header + rows], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
@@ -894,7 +905,9 @@ function exportCsv(items: HistoryItem[]) {
   a.href = url;
   a.download = "healthclaim-history.csv";
   a.click();
-  URL.revokeObjectURL(url);
+  // Revoking immediately can race with the browser actually starting the
+  // download on some platforms — give it a tick first.
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export function HistoryScreen({ onBack }: { onBack: () => void }) {

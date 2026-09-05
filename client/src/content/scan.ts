@@ -48,6 +48,20 @@ function handleVerifyClick(adapter: SiteAdapter, postEl: HTMLElement, buttonEl: 
     return;
   }
 
+  // A video that's actually playing with sound is more likely to carry its
+  // claim as spoken narration than as on-screen text — screenshotting a
+  // frame of it would miss the claim entirely, so record a few seconds of
+  // tab audio instead and let Gemini transcribe + extract from that.
+  const isAudibleVideo =
+    mediaEl instanceof HTMLVideoElement && !mediaEl.muted && !mediaEl.paused && mediaEl.currentTime > 0;
+
+  if (isAudibleVideo) {
+    setState("loading");
+    overlay.showLoading(anchorRect, "Listening…");
+    runVerification(adapter, postEl, buttonEl, setState, { kind: "audio" }, "Audio claim");
+    return;
+  }
+
   const payload: ClaimPayload = {
     kind: "media-rect",
     rect: elementRect(mediaEl),
