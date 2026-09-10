@@ -31,7 +31,7 @@ app.use(express.json({ limit: "10mb" }));
 // whole API quota. 20 requests / 10 min per IP is generous for real usage.
 const verifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 20,
+  limit: 75,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many verification requests. Please wait a bit and try again." },
