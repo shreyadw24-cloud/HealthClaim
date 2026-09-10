@@ -156,6 +156,7 @@ cd HealthClaim
 ```bash
 cd server
 npm install
+npm run dev
 ```
 Configure environment variables in `server/.env` (see below), then:
 ```bash
