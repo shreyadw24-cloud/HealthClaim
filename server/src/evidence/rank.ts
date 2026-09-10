@@ -1,5 +1,19 @@
 import type { Evidence } from "./search.js";
 
+// Sources that return actual fetched content (an abstract, a snippet) for
+// this specific claim, as opposed to a generic official-site search link —
+// see search.ts. These get the same relevance bonus as PubMed did before;
+// a plain search-page link is a weaker signal and stays at the lower bonus.
+const REAL_CONTENT_SOURCES = new Set([
+  "PubMed",
+  "MedlinePlus (NIH)",
+  "Europe PMC",
+  "Semantic Scholar",
+  "ClinicalTrials.gov (NIH)",
+  "FDA (DailyMed)",
+  "USDA FoodData Central"
+]);
+
 function tokenize(text: string): string[] {
   return text
     .toLowerCase()
@@ -34,7 +48,7 @@ function calculateScore(
     matches / Math.max(claimWords.size, 1);
 
   const sourceBonus =
-    evidence.source === "PubMed" ? 0.25 : 0.1;
+    REAL_CONTENT_SOURCES.has(evidence.source) ? 0.25 : 0.1;
 
   return Math.min(1, relevance + sourceBonus);
 }

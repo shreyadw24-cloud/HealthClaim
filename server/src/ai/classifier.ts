@@ -1,4 +1,5 @@
 import { generateText } from "./gemini.js";
+import { generateJsonWithGroq, isGroqConfigured } from "./groq.js";
 
 export type Verdict =
   | "Supported"
@@ -114,7 +115,24 @@ ${evidenceText || "No evidence was retrieved."}
 </untrusted_input>
 `;
 
-  const response = await generateText(prompt);
+  // Try Groq first when it's configured — it's text-only, which is all
+  // this step needs, and its free tier has far more headroom than
+  // Gemini's. If it's not configured, or the call fails for any reason
+  // (down, quota, bad key), fall back to Gemini so classification never
+  // breaks because of the optional provider.
+  let response: string;
+
+  if (isGroqConfigured()) {
+    try {
+      response = await generateJsonWithGroq(prompt);
+    } catch (error) {
+      console.error("Groq classification failed, falling back to Gemini:", error);
+      response = await generateText(prompt);
+    }
+  } else {
+    response = await generateText(prompt);
+  }
+
   const cleaned = cleanJsonResponse(response);
 
   try {
