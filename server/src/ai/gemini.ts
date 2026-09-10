@@ -19,7 +19,11 @@ export const GEMINI_MODEL =
 export async function generateText(prompt: string): Promise<string> {
   const response = await gemini.models.generateContent({
     model: GEMINI_MODEL,
-    contents: prompt
+    contents: prompt,
+    // Low temperature — this is claim extraction and classification, not
+    // creative writing. We want the same input to reliably produce the
+    // same verdict/JSON shape, not varied "creative" phrasing each time.
+    config: { temperature: 0.15 }
   });
 
   const text = response.text;
@@ -40,7 +44,8 @@ export type GeminiPart =
 export async function generateWithParts(parts: GeminiPart[]): Promise<string> {
   const response = await gemini.models.generateContent({
     model: GEMINI_MODEL,
-    contents: [{ role: "user", parts }]
+    contents: [{ role: "user", parts }],
+    config: { temperature: 0.15 }
   });
 
   const text = response.text;

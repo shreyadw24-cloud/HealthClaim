@@ -2,6 +2,7 @@ import { extractClaim } from "./claimExtractor.js";
 import { extractClaimFromImage, extractClaimFromAudio } from "./mediaExtractor.js";
 import { classifyClaim } from "./classifier.js";
 import { retrieveEvidence } from "../evidence/index.js";
+import { REAL_CONTENT_SOURCES } from "../evidence/rank.js";
 
 export interface VerifyClaimResult {
   claim: string;
@@ -91,10 +92,20 @@ export async function verifyClaim(
     extracted.searchTerms
   );
 
-  // STEP 3: Convert evidence into context for Gemini.
+  // STEP 3: Convert evidence into context for Gemini/Groq — only the
+  // real-content sources (PubMed, MedlinePlus, Europe PMC, Semantic
+  // Scholar, ClinicalTrials.gov, FDA, USDA). The WHO/CDC "search results"
+  // entries are cross-check links for the user (see evidence/search.ts),
+  // not verified evidence — feeding them into the classifier's grounding
+  // context would let unverified placeholder text influence the verdict.
+  // They still appear in `sources` below so the UI can show them.
+  const groundingEvidence = evidence.filter((item) =>
+    REAL_CONTENT_SOURCES.has(item.source)
+  );
+
   const evidenceText =
-    evidence.length > 0
-      ? evidence
+    groundingEvidence.length > 0
+      ? groundingEvidence
           .map(
             (item, index) =>
               `[${index + 1}]
