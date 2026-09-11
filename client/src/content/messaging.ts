@@ -21,7 +21,9 @@ export function requestVerification(payload: ClaimPayload, postUrl?: string): Pr
       if (response.ok) {
         resolve(response.result);
       } else {
-        reject(new Error(response.error));
+        const error = new Error(response.error) as Error & { noHealthClaim?: boolean };
+        if (response.noHealthClaim) error.noHealthClaim = true;
+        reject(error);
       }
     });
   });

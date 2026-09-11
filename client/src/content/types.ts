@@ -47,7 +47,7 @@ export type VerifyRequestMessage = {
 
 export type VerifyResponseMessage =
   | { type: "HEALTHCLAIM_VERIFY_RESULT"; ok: true; result: VerifyResult }
-  | { type: "HEALTHCLAIM_VERIFY_RESULT"; ok: false; error: string };
+  | { type: "HEALTHCLAIM_VERIFY_RESULT"; ok: false; error: string; noHealthClaim?: boolean };
 
 export function isVerifyRequestMessage(msg: unknown): msg is VerifyRequestMessage {
   return (

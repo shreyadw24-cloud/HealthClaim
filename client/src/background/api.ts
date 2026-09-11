@@ -26,7 +26,15 @@ export async function verifyClaim(body: VerifyClaimBody): Promise<VerifyResult> 
 
     if (!res.ok) {
       const payload = await res.json().catch(() => null);
-      throw new Error(payload?.error || `Verification failed (${res.status}).`);
+      const error = new Error(payload?.error || `Verification failed (${res.status}).`) as Error & {
+        noHealthClaim?: boolean;
+      };
+      // The server explicitly flags a genuine "nothing to verify here" case
+      // (see server.ts) separately from a real failure — keep that flag
+      // attached to the error instead of collapsing everything to a message
+      // string, so the UI can skip the "Try again" retry flow for it.
+      if (payload?.noHealthClaim) error.noHealthClaim = true;
+      throw error;
     }
 
     return res.json();

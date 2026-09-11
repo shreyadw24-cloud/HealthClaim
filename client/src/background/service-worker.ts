@@ -123,6 +123,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         type: "HEALTHCLAIM_VERIFY_RESULT",
         ok: false,
         error: err instanceof Error ? err.message : "Verification failed.",
+        noHealthClaim: err instanceof Error && (err as Error & { noHealthClaim?: boolean }).noHealthClaim === true,
       };
       sendResponse(response);
     }

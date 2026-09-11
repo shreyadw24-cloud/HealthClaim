@@ -27,7 +27,18 @@ async function verifyClaim(claim: string): Promise<VerifyResult> {
       body: JSON.stringify({ claim }),
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error("Verification failed");
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      const error = new Error(payload?.error || "Verification failed") as Error & {
+        noHealthClaim?: boolean;
+      };
+      // The server tells us explicitly when it checked and simply found no
+      // health claim (vs. an actual failure) — keep that on the error so
+      // the UI can skip the "Try again" retry flow, which doesn't make
+      // sense here (retrying won't turn a non-health post into one).
+      if (payload?.noHealthClaim) error.noHealthClaim = true;
+      throw error;
+    }
     return res.json();
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
@@ -1145,8 +1156,16 @@ export default function App() {
       saveToHistory(selected, data);
       const isHarmful = data.verdict === "Potentially Harmful" || data.verdict === "Insufficient Evidence";
       setScreen(isHarmful ? "result-harmful" : "result-supported");
-    } catch {
-      setErrorInfo(null);
+    } catch (err) {
+      if (err instanceof Error && (err as Error & { noHealthClaim?: boolean }).noHealthClaim) {
+        setErrorInfo({
+          title: "No health claim found",
+          message: "This text doesn't contain a health or nutrition claim, so there's nothing to verify here.",
+          retryLabel: "Okay",
+        });
+      } else {
+        setErrorInfo(null);
+      }
       setScreen("error");
     }
   };

@@ -111,7 +111,17 @@ function runVerification(
       setState("idle");
       overlay.showResult(buttonEl.getBoundingClientRect(), displayClaim, result);
     })
-    .catch((err: Error) => {
+    .catch((err: Error & { noHealthClaim?: boolean }) => {
+      if (err.noHealthClaim) {
+        // The server successfully checked and found no health claim here —
+        // this isn't a failure, so don't show the error card with a
+        // pointless "Try again" (retrying won't turn a travel photo into a
+        // health claim). Just close the loading overlay and let the button
+        // flash "No claim detected", same as the pre-flight no-claim case.
+        overlay.hide();
+        setState("no-claim");
+        return;
+      }
       setState("idle");
       overlay.showError(buttonEl.getBoundingClientRect(), err.message || "Verification failed.", () =>
         handleVerifyClick(adapter, postEl, buttonEl, setState),
