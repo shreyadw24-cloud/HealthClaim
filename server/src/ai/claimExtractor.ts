@@ -42,11 +42,14 @@ Rules:
 3. Do not add facts that are not present in the input.
 4. If there are multiple claims, select the main health claim.
 5. Preserve the meaning of the original statement.
-6. Return ONLY valid JSON.
+6. If the text contains NO health or nutrition claim at all (e.g. it's
+   about travel, sports scores, a joke, politics, etc), return an empty
+   "claim" field — do not force-fit an unrelated sentence into a "claim".
+7. Return ONLY valid JSON.
 
 Required JSON format:
 {
-  "claim": "the normalized factual health claim",
+  "claim": "the normalized factual health claim, or an empty string if none",
   "searchTerms": "3-6 keywords suitable for a medical literature search (e.g. PubMed), not a full sentence"
 }
 
@@ -58,31 +61,44 @@ ${originalText}
   const response = await generateText(prompt);
   const cleaned = cleanJsonResponse(response);
 
+  let parsed: unknown;
+
   try {
-    const parsed = JSON.parse(cleaned);
-
-    if (
-      !parsed ||
-      typeof parsed.claim !== "string" ||
-      !parsed.claim.trim()
-    ) {
-      throw new Error("Invalid claim extraction response.");
-    }
-
-    return {
-      originalText,
-      claim: parsed.claim.trim(),
-      searchTerms:
-        typeof parsed.searchTerms === "string" && parsed.searchTerms.trim()
-          ? parsed.searchTerms.trim()
-          : parsed.claim.trim()
-    };
+    parsed = JSON.parse(cleaned);
   } catch {
-    // Safe fallback if Gemini doesn't return valid JSON.
+    // Gemini didn't return valid JSON at all (rare, but happens) — safest
+    // fallback is to treat the raw text as the claim rather than failing
+    // the whole request outright.
     return {
       originalText,
       claim: originalText,
       searchTerms: originalText
     };
   }
+
+  const claim =
+    typeof (parsed as { claim?: unknown })?.claim === "string"
+      ? (parsed as { claim: string }).claim.trim()
+      : "";
+
+  if (!claim) {
+    // This is different from a JSON-parsing failure above: the JSON was
+    // valid and Gemini explicitly reported no health claim here. Silently
+    // falling back to the raw post text would force a health "verdict"
+    // onto something that was never a health claim (a travel photo, a
+    // meme, a political post) — throw instead, same as
+    // mediaExtractor.ts already does for images/audio with no claim.
+    throw new Error("NO_HEALTH_CLAIM");
+  }
+
+  const rawSearchTerms = (parsed as { searchTerms?: unknown })?.searchTerms;
+
+  return {
+    originalText,
+    claim,
+    searchTerms:
+      typeof rawSearchTerms === "string" && rawSearchTerms.trim()
+        ? rawSearchTerms.trim()
+        : claim
+  };
 }

@@ -31,7 +31,7 @@ app.use(express.json({ limit: "10mb" }));
 // whole API quota. 20 requests / 10 min per IP is generous for real usage.
 const verifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 75,
+  limit: 20,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many verification requests. Please wait a bit and try again." },
@@ -93,6 +93,19 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error("verify-claim failed:", err);
+
+    // Thrown deliberately by claimExtractor.ts / mediaExtractor.ts when the
+    // post genuinely has no health claim in it — a clearer, non-alarming
+    // message than the generic fallback below, and no retry button on the
+    // client makes sense here since retrying won't change the answer.
+    const message = err instanceof Error ? err.message : "";
+    if (message === "NO_HEALTH_CLAIM" || message.startsWith("Could not find a health claim")) {
+      return res.status(422).json({
+        error: "No health claim was found in this post — nothing to verify here.",
+        noHealthClaim: true
+      });
+    }
+
     res.status(500).json({
       error: "Verification failed. Please try again.",
     });
