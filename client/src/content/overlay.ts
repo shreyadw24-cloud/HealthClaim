@@ -352,6 +352,25 @@ export class ResultOverlay {
     this.show();
   }
 
+  showNoClaim(anchorRect: DOMRect, message: string, onClose: () => void) {
+    this.stopLoadingTimer();
+    this.position(anchorRect);
+    this.card.innerHTML = `
+      ${this.header()}
+      <div class="hc-error-block">
+        <h2 class="hc-error-title">No claim detected</h2>
+        <p class="hc-error-msg">${escapeHtml(message)}</p>
+        <button class="hc-retry">Okay</button>
+      </div>
+    `;
+    this.bindClose();
+    this.card.querySelector<HTMLButtonElement>(".hc-retry")?.addEventListener("click", () => {
+      onClose();
+      this.hide();
+    });
+    this.show();
+  }
+
   private show() {
     document.addEventListener("mousedown", this.outsideClickHandler, true);
     window.addEventListener("scroll", this.hideOnScroll, true);

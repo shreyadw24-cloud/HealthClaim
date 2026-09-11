@@ -1159,7 +1159,7 @@ export default function App() {
     } catch (err) {
       if (err instanceof Error && (err as Error & { noHealthClaim?: boolean }).noHealthClaim) {
         setErrorInfo({
-          title: "No health claim found",
+          title: "No claim detected",
           message: "This text doesn't contain a health or nutrition claim, so there's nothing to verify here.",
           retryLabel: "Okay",
         });
