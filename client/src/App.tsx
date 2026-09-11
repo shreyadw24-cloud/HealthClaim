@@ -19,7 +19,7 @@ type VerifyResult = {
 
 async function verifyClaim(claim: string): Promise<VerifyResult> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45_000);
+  const timeout = setTimeout(() => controller.abort(), 30_000);
   try {
     const res = await fetch(`${import.meta.env.VITE_API_URL}/verify-claim`, {
       method: "POST",
@@ -27,18 +27,7 @@ async function verifyClaim(claim: string): Promise<VerifyResult> {
       body: JSON.stringify({ claim }),
       signal: controller.signal,
     });
-    if (!res.ok) {
-      const payload = await res.json().catch(() => null);
-      const error = new Error(payload?.error || "Verification failed") as Error & {
-        noHealthClaim?: boolean;
-      };
-      // The server tells us explicitly when it checked and simply found no
-      // health claim (vs. an actual failure) — keep that on the error so
-      // the UI can skip the "Try again" retry flow, which doesn't make
-      // sense here (retrying won't turn a non-health post into one).
-      if (payload?.noHealthClaim) error.noHealthClaim = true;
-      throw error;
-    }
+    if (!res.ok) throw new Error("Verification failed");
     return res.json();
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
@@ -48,6 +37,29 @@ async function verifyClaim(claim: string): Promise<VerifyResult> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+// A related claim either comes from a live web search (just claim text +
+// domain, no verdict yet — verifying it is a fresh /verify-claim call) or
+// from our own Supabase history (already has a precomputed verdict, so
+// clicking it is instant).
+type RelatedClaim = {
+  claim: string;
+  sourceType: "web" | "history";
+  domain?: string;
+  timesChecked?: number;
+  verdict?: VerifyResult["verdict"];
+  harmLevel?: VerifyResult["harmLevel"];
+  explanation?: string;
+  sources?: { name: string; url: string }[];
+};
+
+async function fetchRelatedClaims(claim: string): Promise<RelatedClaim[]> {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/related-claims?claim=${encodeURIComponent(claim)}`
+  );
+  if (!res.ok) throw new Error("Could not load related claims");
+  return res.json();
 }
 
 type HistoryItem = { id: number; claim: string; status: Status; time: string; source: string };
@@ -494,6 +506,153 @@ const STATUS_STYLE: Record<VerifyResult["verdict"], { pillBg: string; pillText: 
   },
 };
 
+// ── Related claims panel + drill-in view ─────────────────────────────────────
+function RelatedClaimsPanel({
+  status,
+  items,
+  verifyingClaim,
+  onSelect,
+  onRetry,
+}: {
+  status: "idle" | "loading" | "loaded" | "error";
+  items: RelatedClaim[];
+  verifyingClaim: string | null;
+  onSelect: (item: RelatedClaim) => void;
+  onRetry: () => void;
+}) {
+  return (
+    <div className="mt-4 rounded-xl p-3" style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.14)" }}>
+      <p className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5">
+        Related claims on this topic
+      </p>
+
+      {status === "loading" && (
+        <p className="font-inter text-[12px]" style={{ color: "#6b6a63" }}>
+          Searching the web for related claims…
+        </p>
+      )}
+
+      {status === "error" && (
+        <div className="flex items-center justify-between">
+          <p className="font-inter text-[12px]" style={{ color: "#A32D2D" }}>Couldn't load related claims.</p>
+          <button onClick={onRetry} className="font-inter text-[11px] font-semibold" style={{ color: "#178F88" }}>
+            Retry
+          </button>
+        </div>
+      )}
+
+      {status === "loaded" && items.length === 0 && (
+        <p className="font-inter text-[12px]" style={{ color: "#6b6a63" }}>
+          No related claims found for this topic right now.
+        </p>
+      )}
+
+      {status === "loaded" && items.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {items.map((item, i) => {
+            const isVerifying = verifyingClaim === item.claim;
+            return (
+              <button
+                key={i}
+                onClick={() => onSelect(item)}
+                disabled={isVerifying}
+                className="text-left rounded-lg p-2.5 transition-colors hover:bg-white disabled:opacity-60"
+                style={{ background: "#FFFFFF", border: "1px solid rgba(11,31,58,0.07)" }}
+              >
+                <p className="font-fraunces text-[12.5px] text-[#0B1F3A] leading-[1.4] line-clamp-2">
+                  {item.claim}
+                </p>
+                <div className="flex items-center gap-2 mt-1.5">
+                  {item.sourceType === "history" && item.verdict ? (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: STATUS_STYLE[item.verdict].dot }} />
+                      <span className="font-inter text-[10.5px] font-medium" style={{ color: "#6b6a63" }}>
+                        {item.verdict}
+                      </span>
+                      <span className="font-inter text-[10px]" style={{ color: "#9a988e" }}>
+                        · Checked {item.timesChecked}× before
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-inter text-[10px]" style={{ color: "#9a988e" }}>
+                      {isVerifying ? "Checking…" : `From the web${item.domain ? ` · ${item.domain}` : ""}`}
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RelatedClaimBody({ item, onBack }: { item: RelatedClaim; onBack: () => void }) {
+  if (!item.verdict) return null; // guarded by caller — verdict is always present by render time
+  const s = STATUS_STYLE[item.verdict];
+  return (
+    <div>
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1.5 font-inter text-[11.5px] font-semibold mb-3"
+        style={{ color: "#178F88" }}
+      >
+        ← Back to your claim
+      </button>
+
+      <div className="rounded-2xl p-4" style={{ background: "#FFFFFF", border: "1px solid rgba(11,31,58,0.08)", boxShadow: "0 2px 8px rgba(11,31,58,0.04)" }}>
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="font-inter text-[9.5px] font-semibold text-[#9a988e] tracking-[0.14em] uppercase">
+            Related Claim
+          </span>
+          <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.08)" }} />
+        </div>
+        <p className="font-fraunces text-[15px] font-medium text-[#0B1F3A] leading-[1.55]">{item.claim}</p>
+      </div>
+
+      <span
+        className="inline-block mt-3.5 px-3.5 py-1.5 rounded-full font-inter text-[11.5px] font-semibold"
+        style={{ background: s.pillBg, color: s.pillText, border: `1px solid ${s.pillBorder}` }}
+      >
+        {item.verdict}
+      </span>
+
+      <div className="pl-[14px] mt-4" style={{ borderLeft: `3px solid ${s.borderColor}` }}>
+        <p className="font-inter text-[10.5px] font-semibold uppercase tracking-[0.1em]" style={{ color: s.accentText }}>
+          What Evidence Says
+        </p>
+        <p className="font-inter text-[13px] leading-[1.6] mt-1.5" style={{ color: "#4a4a45" }}>
+          {item.explanation}
+        </p>
+      </div>
+
+      {item.sources && item.sources.length > 0 && (
+        <div className="mt-3.5">
+          <p className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5">
+            Evidence Sources
+          </p>
+          <div className="flex gap-2 flex-wrap">
+            {item.sources.slice(0, 3).map((src, i) => (
+              <a
+                key={i}
+                href={src.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-[72px] rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
+                style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
+              >
+                <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
+                <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">Evidence source</div>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ResultScreen({
   result,
   claim,
@@ -507,6 +666,50 @@ function ResultScreen({
   const [simpleMode, setSimpleMode] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sourcesExpanded, setSourcesExpanded] = useState(false);
+  const [relatedOpen, setRelatedOpen] = useState(false);
+  const [related, setRelated] = useState<{ status: "idle" | "loading" | "loaded" | "error"; items: RelatedClaim[] }>({
+    status: "idle",
+    items: [],
+  });
+  const [viewingRelated, setViewingRelated] = useState<RelatedClaim | null>(null);
+  const [verifyingRelatedClaim, setVerifyingRelatedClaim] = useState<string | null>(null);
+
+  async function loadRelated() {
+    setRelated({ status: "loading", items: [] });
+    try {
+      const items = await fetchRelatedClaims(claim);
+      setRelated({ status: "loaded", items });
+    } catch {
+      setRelated({ status: "error", items: [] });
+    }
+  }
+
+  // History-sourced items already carry a precomputed verdict — show
+  // instantly. Web-sourced items are just claim text — verify them live
+  // through the normal /verify-claim pipeline (same cost as any fresh check).
+  async function handleSelectRelated(item: RelatedClaim) {
+    if (item.sourceType === "history" && item.verdict) {
+      setViewingRelated(item);
+      return;
+    }
+    setVerifyingRelatedClaim(item.claim);
+    try {
+      const data = await verifyClaim(item.claim);
+      setViewingRelated({
+        claim: item.claim,
+        sourceType: item.sourceType,
+        domain: item.domain,
+        verdict: data.verdict,
+        harmLevel: data.harmLevel,
+        explanation: data.explanation,
+        sources: data.sources,
+      });
+    } catch {
+      setRelated((r) => ({ ...r, status: "error" }));
+    } finally {
+      setVerifyingRelatedClaim(null);
+    }
+  }
   const s = STATUS_STYLE[result.verdict];
   const isHarmful = result.verdict === "Potentially Harmful" || result.verdict === "Insufficient Evidence";
   // Prefer the backend's real confidence score; fall back to the per-verdict
@@ -548,9 +751,13 @@ function ResultScreen({
 
   const footerButtons = [
     {
-      tip: sourcesExpanded ? "Fewer sources" : "More context",
-      active: sourcesExpanded,
-      onClick: () => setSourcesExpanded((v) => !v),
+      tip: relatedOpen ? "Hide related" : "Related claims",
+      active: relatedOpen,
+      onClick: () => {
+        const next = !relatedOpen;
+        setRelatedOpen(next);
+        if (next && related.status === "idle") loadRelated();
+      },
       icon: (
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round">
           <circle cx="8" cy="8" r="6.5" />
@@ -635,6 +842,20 @@ function ResultScreen({
 
       {/* Body */}
       <div className="flex-1 px-[18px] py-4">
+      {viewingRelated ? (
+        <RelatedClaimBody item={viewingRelated} onBack={() => setViewingRelated(null)} />
+      ) : verifyingRelatedClaim ? (
+        <div className="flex flex-col items-center justify-center gap-3 py-14">
+          <div
+            className="w-8 h-8 rounded-full animate-spin"
+            style={{ border: "2.5px solid rgba(32,178,170,0.2)", borderTopColor: "#20B2AA" }}
+          />
+          <p className="font-fraunces text-[13px] italic text-center px-6" style={{ color: "#0B1F3A" }}>
+            Checking "{verifyingRelatedClaim}"…
+          </p>
+        </div>
+      ) : (
+      <>
         {/* Claim card */}
         <div
           className="rounded-2xl p-4"
@@ -787,6 +1008,18 @@ function ResultScreen({
             </button>
           )}
         </div>
+
+        {relatedOpen && (
+          <RelatedClaimsPanel
+            status={related.status}
+            items={related.items}
+            verifyingClaim={verifyingRelatedClaim}
+            onSelect={handleSelectRelated}
+            onRetry={loadRelated}
+          />
+        )}
+      </>
+      )}
       </div>
 
       {/* Footer */}
@@ -794,23 +1027,33 @@ function ResultScreen({
         className="flex items-center justify-around py-3"
         style={{ borderTop: "1px solid rgba(32,178,170,0.12)" }}
       >
-        {footerButtons.map(({ tip, icon, active, onClick }, idx) => (
+        {viewingRelated ? (
           <button
-            key={idx}
-            onClick={onClick}
-            className="flex flex-col items-center gap-1 transition-transform duration-150 active:scale-90"
-            aria-label={tip}
-            aria-pressed={active}
+            onClick={() => setViewingRelated(null)}
+            className="w-full text-center font-inter text-[12px] font-semibold py-1"
+            style={{ color: "#178F88" }}
           >
-            <span style={{ color: active ? "#178F88" : "#20B2AA" }}>{icon}</span>
-            <span
-              className="font-inter text-[9.5px]"
-              style={{ color: active ? "#178F88" : "#6b6a63", fontWeight: active ? 600 : 400 }}
-            >
-              {tip.split(" ")[0]}
-            </span>
+            ← Back to your claim
           </button>
-        ))}
+        ) : (
+          footerButtons.map(({ tip, icon, active, onClick }, idx) => (
+            <button
+              key={idx}
+              onClick={onClick}
+              className="flex flex-col items-center gap-1 transition-transform duration-150 active:scale-90"
+              aria-label={tip}
+              aria-pressed={active}
+            >
+              <span style={{ color: active ? "#178F88" : "#20B2AA" }}>{icon}</span>
+              <span
+                className="font-inter text-[9.5px]"
+                style={{ color: active ? "#178F88" : "#6b6a63", fontWeight: active ? 600 : 400 }}
+              >
+                {tip.split(" ")[0]}
+              </span>
+            </button>
+          ))
+        )}
       </div>
     </div>
   );
@@ -1156,16 +1399,8 @@ export default function App() {
       saveToHistory(selected, data);
       const isHarmful = data.verdict === "Potentially Harmful" || data.verdict === "Insufficient Evidence";
       setScreen(isHarmful ? "result-harmful" : "result-supported");
-    } catch (err) {
-      if (err instanceof Error && (err as Error & { noHealthClaim?: boolean }).noHealthClaim) {
-        setErrorInfo({
-          title: "No claim detected",
-          message: "This text doesn't contain a health or nutrition claim, so there's nothing to verify here.",
-          retryLabel: "Okay",
-        });
-      } else {
-        setErrorInfo(null);
-      }
+    } catch {
+      setErrorInfo(null);
       setScreen("error");
     }
   };
