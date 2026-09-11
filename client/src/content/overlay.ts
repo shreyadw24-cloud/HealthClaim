@@ -81,13 +81,38 @@ export class ResultOverlay {
     if (left + width + margin > window.innerWidth) {
       left = Math.max(margin, window.innerWidth - width - margin);
     }
-    let top = anchorRect.bottom + margin;
-    const estimatedHeight = 420;
-    if (top + estimatedHeight > window.innerHeight) {
-      top = Math.max(margin, anchorRect.top - margin - estimatedHeight);
+
+    // Previously this used a flat 420px height estimate to decide whether
+    // to flip the card above the button, and CSS capped it at a flat 80vh
+    // regardless of where `top` landed. Real result cards (evidence +
+    // accordion + sources + footer) are often much taller than 420px, and
+    // when the button sits in the lower half of the page, `top` + 80vh
+    // extended past the bottom of the viewport with no way to scroll the
+    // rest into view — position:fixed doesn't get pulled back on-screen by
+    // page scrolling. Now the max-height is computed from whichever side
+    // (above/below the button) actually has more room, so the card's own
+    // bottom edge — and its close button — can never end up off-screen;
+    // overflow-y:auto (already in the CSS) handles anything still too
+    // tall to fit by scrolling inside the card instead.
+    const minUsableHeight = 200;
+    const spaceBelow = window.innerHeight - anchorRect.bottom - margin * 2;
+    const spaceAbove = anchorRect.top - margin * 2;
+    const placeBelow = spaceBelow >= minUsableHeight || spaceBelow >= spaceAbove;
+
+    let top: number;
+    let maxHeight: number;
+
+    if (placeBelow) {
+      top = anchorRect.bottom + margin;
+      maxHeight = Math.max(minUsableHeight, Math.min(spaceBelow, window.innerHeight * 0.8));
+    } else {
+      maxHeight = Math.max(minUsableHeight, Math.min(spaceAbove, window.innerHeight * 0.8));
+      top = Math.max(margin, anchorRect.top - margin - maxHeight);
     }
+
     this.card.style.left = `${left}px`;
     this.card.style.top = `${top}px`;
+    this.card.style.maxHeight = `${maxHeight}px`;
   }
 
   private header(): string {
