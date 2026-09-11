@@ -22,7 +22,17 @@ export type ClaimPayload =
       rect: { x: number; y: number; width: number; height: number };
       devicePixelRatio: number;
     }
-  | { kind: "audio" };
+  | { kind: "audio" }
+  | {
+      // Post has BOTH caption text AND an image/video — send both so
+      // Gemini can pick the real claim out of whichever one has it
+      // (previously the image/video was silently dropped whenever any
+      // caption text existed, even a generic one).
+      kind: "text-and-media-rect";
+      text: string;
+      rect: { x: number; y: number; width: number; height: number };
+      devicePixelRatio: number;
+    };
 
 // Message sent from the content script to the background service worker
 // when the user clicks "Verify Health Claim" on a post.

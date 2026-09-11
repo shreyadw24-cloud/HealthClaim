@@ -3,7 +3,8 @@ import type { VerifyResult } from "../content/types";
 export type VerifyClaimBody =
   | { claim: string }
   | { imageBase64: string; mimeType: string }
-  | { audioBase64: string; mimeType: string };
+  | { audioBase64: string; mimeType: string }
+  | { claim: string; imageBase64: string; mimeType: string };
 
 // A full verification runs several sequential Gemini calls, so give it
 // real headroom — but without a limit at all, a stalled network or a

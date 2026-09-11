@@ -35,14 +35,38 @@ function handleVerifyClick(adapter: SiteAdapter, postEl: HTMLElement, buttonEl: 
   const textClaim = selected ?? adapter.getClaimText(postEl);
   const anchorRect = buttonEl.getBoundingClientRect();
 
-  // Fallback chain: selected/caption text first, then a screenshot of the
-  // post's image or video frame, then give up with "no-claim".
+  // Always check for media too, even when text was found — a post can
+  // have both a caption AND an image/video where the actual claim only
+  // appears in one of them (e.g. a generic caption like "Stay healthy!"
+  // next to an infographic with the real, specific claim in it). Only
+  // skip this for an audible playing video: recording its audio takes
+  // several seconds, and if we already have caption text that's usually
+  // the better signal than delaying on audio too.
+  const mediaEl = adapter.getClaimMedia?.(postEl);
+  const isAudibleVideo =
+    mediaEl instanceof HTMLVideoElement && !mediaEl.muted && !mediaEl.paused && mediaEl.currentTime > 0;
+
+  if (textClaim && mediaEl && !isAudibleVideo) {
+    const payload: ClaimPayload = {
+      kind: "text-and-media-rect",
+      text: textClaim,
+      rect: elementRect(mediaEl),
+      devicePixelRatio: window.devicePixelRatio || 1,
+    };
+    setState("loading");
+    overlay.showLoading(anchorRect, textClaim);
+    runVerification(adapter, postEl, buttonEl, setState, payload, textClaim);
+    return;
+  }
+
+  // Fallback chain: text-only, then a screenshot of the post's image or
+  // video frame, then tab audio for an audible video, then give up with
+  // "no-claim".
   if (textClaim) {
     runVerification(adapter, postEl, buttonEl, setState, { kind: "text", text: textClaim }, textClaim);
     return;
   }
 
-  const mediaEl = adapter.getClaimMedia?.(postEl);
   if (!mediaEl) {
     setState("no-claim");
     return;
@@ -52,9 +76,6 @@ function handleVerifyClick(adapter: SiteAdapter, postEl: HTMLElement, buttonEl: 
   // claim as spoken narration than as on-screen text — screenshotting a
   // frame of it would miss the claim entirely, so record a few seconds of
   // tab audio instead and let Gemini transcribe + extract from that.
-  const isAudibleVideo =
-    mediaEl instanceof HTMLVideoElement && !mediaEl.muted && !mediaEl.paused && mediaEl.currentTime > 0;
-
   if (isAudibleVideo) {
     setState("loading");
     overlay.showLoading(anchorRect, "Listening…");

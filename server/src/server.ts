@@ -60,7 +60,12 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
   const { claim, imageBase64, audioBase64, mimeType } = req.body;
 
   let input: ClaimInput;
-  if (imageBase64) {
+  if (claim && claim.trim() && imageBase64) {
+    // Both a caption AND an image/video-frame screenshot came in together —
+    // send both to Gemini in one call so it can pick the real claim out of
+    // whichever one actually has it (see extractClaimFromTextAndImage).
+    input = { kind: "text-and-image", text: claim, imageBase64, mimeType: mimeType || "image/jpeg" };
+  } else if (imageBase64) {
     input = { kind: "image", imageBase64, mimeType: mimeType || "image/jpeg" };
   } else if (audioBase64) {
     input = { kind: "audio", audioBase64, mimeType: mimeType || "audio/webm" };

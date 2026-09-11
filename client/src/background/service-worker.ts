@@ -83,6 +83,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       if (message.payload.kind === "text") {
         claimLabel = message.payload.text;
         result = await verifyClaim({ claim: message.payload.text });
+      } else if (message.payload.kind === "text-and-media-rect") {
+        const tab = sender.tab;
+        if (!tab?.windowId || tab.id === undefined) {
+          throw new Error("Could not identify the source tab.");
+        }
+        const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 85 });
+        const imageBase64 = await cropDataUrl(dataUrl, message.payload.rect, message.payload.devicePixelRatio);
+        claimLabel = message.payload.text;
+        result = await verifyClaim({ claim: message.payload.text, imageBase64, mimeType: "image/jpeg" });
       } else if (message.payload.kind === "media-rect") {
         const tab = sender.tab;
         if (!tab?.windowId || tab.id === undefined) {

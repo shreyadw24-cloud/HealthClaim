@@ -1,5 +1,5 @@
 import { extractClaim } from "./claimExtractor.js";
-import { extractClaimFromImage, extractClaimFromAudio } from "./mediaExtractor.js";
+import { extractClaimFromImage, extractClaimFromAudio, extractClaimFromTextAndImage } from "./mediaExtractor.js";
 import { classifyClaim } from "./classifier.js";
 import { retrieveEvidence } from "../evidence/index.js";
 import { REAL_CONTENT_SOURCES } from "../evidence/rank.js";
@@ -21,13 +21,17 @@ export interface VerifyClaimResult {
   }[];
 }
 
-// A claim can come in as raw text, a screenshot of an image/video frame, or
-// a recorded audio clip — extraction differs per kind, everything after
-// that (evidence, classification, explanation) is identical.
+// A claim can come in as raw text, a screenshot of an image/video frame, a
+// recorded audio clip, or text + a screenshot together (a post with both a
+// caption AND an image/video-frame, where the specific claim might be in
+// either one — see mediaExtractor.ts's extractClaimFromTextAndImage) —
+// extraction differs per kind, everything after that (evidence,
+// classification, explanation) is identical.
 export type ClaimInput =
   | { kind: "text"; text: string }
   | { kind: "image"; imageBase64: string; mimeType?: string }
-  | { kind: "audio"; audioBase64: string; mimeType?: string };
+  | { kind: "audio"; audioBase64: string; mimeType?: string }
+  | { kind: "text-and-image"; text: string; imageBase64: string; mimeType?: string };
 
 // Same underlying claim gets checked by many different users (a viral post
 // gets the same "does X cure Y" caption seen thousands of times), and each
@@ -76,6 +80,8 @@ export async function verifyClaim(
         return extractClaimFromImage(input.imageBase64, input.mimeType);
       case "audio":
         return extractClaimFromAudio(input.audioBase64, input.mimeType);
+      case "text-and-image":
+        return extractClaimFromTextAndImage(input.text, input.imageBase64, input.mimeType);
     }
   })();
 
