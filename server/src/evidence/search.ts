@@ -41,6 +41,28 @@ async function fetchJson<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+// openFDA is unusual: it returns HTTP 404 when a search matches zero
+// records, instead of a 200 with an empty results array like every other
+// source here. That's a normal "nothing found for this claim" outcome
+// (most claims aren't about a specific FDA-labeled drug), not a real
+// failure — this variant treats 404 as "no results" so it doesn't get
+// logged as an error alongside genuine failures.
+async function fetchJsonOrNullOn404<T>(url: string): Promise<T | null> {
+  const response = await fetch(url);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `Evidence request failed with status ${response.status}`
+    );
+  }
+
+  return response.json() as Promise<T>;
+}
+
 async function searchPubMed(
   claim: string
 ): Promise<PubMedArticle[]> {
@@ -256,7 +278,12 @@ async function searchOpenFda(claim: string): Promise<OpenFdaResult[]> {
     }[];
   }
 
-  const data = await fetchJson<OpenFdaResponse>(url);
+  const data = await fetchJsonOrNullOn404<OpenFdaResponse>(url);
+
+  if (!data) {
+    return [];
+  }
+
   const results = data.results ?? [];
 
   return results

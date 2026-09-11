@@ -12,8 +12,11 @@ import "dotenv/config";
 
 const apiKey = process.env.GROQ_API_KEY;
 
+// llama-3.3-70b-versatile was decommissioned by Groq on Aug 16, 2026 (moved
+// to enterprise-only pricing) — openai/gpt-oss-120b is the current
+// general-availability replacement with the same JSON-mode support.
 export const GROQ_MODEL =
-  process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
+  process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
 export function isGroqConfigured(): boolean {
   return Boolean(apiKey);

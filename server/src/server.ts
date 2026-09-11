@@ -7,6 +7,15 @@ import { saveVerification, getHistory } from "./db/verifications.js";
 
 const app = express();
 
+// Render (and most hosts) put the app behind a reverse proxy, which sets
+// the X-Forwarded-For header on every request. Without this, express's
+// req.ip is the proxy's own internal IP for every request (useless for
+// rate limiting) and express-rate-limit logs a ValidationError on every
+// single request warning that it can't trust that header yet. "1" trusts
+// exactly one hop — the proxy directly in front of us — which matches
+// Render's setup.
+app.set("trust proxy", 1);
+
 // Chrome extension requests (service worker / offscreen doc) send either a
 // chrome-extension:// origin or no Origin header at all — never an
 // arbitrary website's origin. This stops random pages from calling our API

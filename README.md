@@ -156,7 +156,6 @@ cd HealthClaim
 ```bash
 cd server
 npm install
-npm run dev
 ```
 Configure environment variables in `server/.env` (see below), then:
 ```bash
@@ -185,7 +184,7 @@ GEMINI_MODEL=gemini-3.6-flash
 # Optional — text-only classification uses Groq when this is set (free at
 # console.groq.com), and falls back to Gemini automatically if it's blank.
 GROQ_API_KEY=your_groq_api_key
-GROQ_MODEL=llama-3.3-70b-versatile
+GROQ_MODEL=openai/gpt-oss-120b
 # Optional — adds USDA food/nutrient evidence when set (free instant key
 # at api.data.gov/signup). Safely skipped if left blank.
 USDA_API_KEY=your_usda_api_key
