@@ -203,7 +203,7 @@ export const OVERLAY_CSS = `
   }
 
   .hc-bottomline {
-    border-radius: 12px; margin-top: 14px; padding: 12px 14px;
+    border-radius: 12px; margin-top: 14px; margin-bottom: 2px; padding: 12px 14px;
   }
   .hc-bottomline-label {
     font-family: 'Inter', sans-serif;
@@ -218,17 +218,18 @@ export const OVERLAY_CSS = `
   .hc-sources-label {
     font-family: 'Inter', sans-serif;
     font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
-    color: #9a988e; margin: 14px 0 10px;
+    color: #9a988e; margin: 20px 0 10px;
   }
   .hc-sources { display: flex; gap: 8px; flex-wrap: wrap; }
   .hc-source-chip {
-    flex: 1; min-width: 72px; border-radius: 12px; padding: 10px 8px; text-align: center;
+    flex: 1; min-width: 72px; max-width: 100%; border-radius: 12px; padding: 10px 8px; text-align: center;
     background: #F3FBFA; border: 1px solid rgba(32,178,170,0.18);
-    text-decoration: none; display: block;
+    text-decoration: none; display: block; overflow: hidden;
   }
   .hc-source-chip:hover { background: #E8F7F5; }
   .hc-source-name {
     font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: ${BRAND.navy};
+    overflow-wrap: anywhere; word-break: break-word;
   }
   .hc-source-caption {
     font-family: 'Inter', sans-serif; font-size: 9px; color: #9a988e; margin-top: 2px;

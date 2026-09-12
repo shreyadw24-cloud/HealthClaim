@@ -83,19 +83,31 @@ Classify the health claim using ONLY these four categories:
 Definitions:
 
 Supported:
-The available evidence reasonably supports the main claim — the
-general relationship, mechanism, or direction the claim describes is
-backed by the evidence, even if the evidence doesn't use the exact
-same numbers, wording, or comparison the claim does.
+The evidence directly backs the claim's core relationship, mechanism,
+or direction, AND does not require the reader to accept an unverified
+specific number, exact percentage, or head-to-head comparison to find
+the claim true. It's fine if the evidence uses different wording, a
+different study, or a different population — what matters is that the
+claim's actual substance is confirmed, not contradicted or
+substantially overstated. For example: "turmeric/curcumin has
+anti-inflammatory and antioxidant properties" backed by studies
+showing exactly that is Supported — the claim made no unverifiable
+precise figure or comparison, so there is nothing left to be "partial"
+about.
 
 Partially Supported:
-The general direction or mechanism has some evidentiary backing, but
-the claim is broader, more certain, or more specific (e.g. an exact
-percentage, or a head-to-head comparison) than what the evidence
-actually establishes. This is the right verdict for most "study found
-X% higher risk" or "twice as much nutrient Y" style claims where real
-evidence exists on the general topic but doesn't independently verify
-the precise figure.
+Use this ONLY when the claim itself contains a specific, checkable
+element — an exact percentage, dose, timeframe, or head-to-head
+comparison — that the evidence does NOT independently verify, even
+though the general direction has some backing. Example: "curcumin
+reduces inflammation by 40% within a week" is Partially Supported
+because evidence may support curcumin's anti-inflammatory effect in
+general but not that specific number/timeframe. Do NOT use this
+verdict just because a claim is broad, general, or lacks a citation —
+a general claim fully backed by general evidence is "Supported", not
+"Partially Supported". Reserve "Partially Supported" for a genuine,
+specific mismatch between what the claim asserts and what the
+evidence actually shows.
 
 Insufficient Evidence:
 Reserve this ONLY for when the evidence supplied is genuinely absent,
@@ -119,6 +131,13 @@ Important:
   statistic, percentage, or comparison isn't verbatim in the evidence —
   see the definitions above. Judge the claim's general substance
   against the evidence's general substance.
+- Likewise, do NOT default to "Partially Supported" just because the
+  claim is general or the evidence isn't a perfect citation match — if
+  the claim makes no specific checkable number/comparison and the
+  evidence backs its actual substance without contradiction, that is
+  "Supported". Reserve "Partially Supported" for when the CLAIM ITSELF
+  contains a specific figure or comparison that goes beyond what the
+  evidence verifies.
 - Consider the actual evidence supplied below.
 - Write the "explanation", "caveats", and "bottomLine" fields in the
   language with ISO 639-1 code "${language}" (the same language the

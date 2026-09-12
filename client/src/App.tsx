@@ -672,10 +672,10 @@ function RelatedClaimBody({ item, onBack, ui }: { item: RelatedClaim; onBack: ()
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 min-w-[72px] rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
+                className="flex-1 min-w-[72px] max-w-full overflow-hidden rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
                 style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
               >
-                <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
+                <div className="font-inter text-[11px] font-semibold text-[#0B1F3A] break-words [overflow-wrap:anywhere]">{src.name}</div>
                 <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">{ui.evidenceSource}</div>
               </a>
             ))}
@@ -1047,10 +1047,10 @@ function ResultScreen({
                 href={src.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 min-w-[72px] rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
+                className="flex-1 min-w-[72px] max-w-full overflow-hidden rounded-xl py-2.5 px-2 text-center transition-colors hover:bg-[#E8F7F5]"
                 style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
               >
-                <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
+                <div className="font-inter text-[11px] font-semibold text-[#0B1F3A] break-words [overflow-wrap:anywhere]">{src.name}</div>
                 <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">{ui.evidenceSource}</div>
               </a>
             ))}
