@@ -58,6 +58,8 @@ ${claim}
     const text = response.text;
     if (!text) return [];
 
+    console.log("RAW GEMINI TEXT:", text);
+
     const parsed = JSON.parse(cleanJsonResponse(text));
     if (!parsed || !Array.isArray(parsed.claims)) return [];
 
@@ -74,10 +76,10 @@ ${claim}
         domain: typeof c.domain === "string" ? c.domain.trim() : undefined,
       }))
       .slice(0, 6);
-  } catch (error) {
+  } catch (error : any) {
     // Web search grounding is best-effort — if it fails, the caller still
     // has the Supabase fallback, so don't let this take down the request.
-    console.error("Web related-claims search failed:", error);
+    console.error("Web related-claims search failed:", error?.message || error);
     return [];
   }
 }
