@@ -163,47 +163,56 @@ app.get("/related-claims", historyLimiter, async (req, res) => {
     return res.status(400).json({ error: "claim is required" });
   }
 
-  const [webClaims, dbClaims] = await Promise.all([
-    findRelatedClaimsOnWeb(claim),
-    getRelatedClaims(claim, 5),
-  ]);
+  try {
+    const [webClaims, dbClaims] = await Promise.all([
+      findRelatedClaimsOnWeb(claim),
+      getRelatedClaims(claim, 5),
+    ]);
 
-  const seen = new Set<string>([claim.trim().toLowerCase()]);
-  const combined: Array<{
-    claim: string;
-    sourceType: "web" | "history";
-    domain?: string;
-    verdict?: string;
-    harmLevel?: string;
-    explanation?: string;
-    sources?: { name: string; url: string }[];
-    timesChecked?: number;
-  }> = [];
+    const seen = new Set<string>([claim.trim().toLowerCase()]);
+    const combined: Array<{
+      claim: string;
+      sourceType: "web" | "history";
+      domain?: string;
+      verdict?: string;
+      harmLevel?: string;
+      explanation?: string;
+      sources?: { name: string; url: string }[];
+      timesChecked?: number;
+    }> = [];
 
-  for (const w of webClaims) {
-    const key = w.claim.trim().toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    combined.push({ claim: w.claim, sourceType: "web", domain: w.domain });
+    for (const w of webClaims) {
+      const key = w.claim.trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      combined.push({ claim: w.claim, sourceType: "web", domain: w.domain });
+    }
+
+    // Defensive: skip any row whose "claim" somehow isn't a usable string
+    // (a data-integrity edge case, not expected in normal operation) rather
+    // than letting .trim() throw and turn this whole request into a 500.
+    for (const r of dbClaims as any[]) {
+      if (combined.length >= 6) break;
+      if (typeof r?.claim !== "string" || !r.claim.trim()) continue;
+      const key = r.claim.trim().toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      combined.push({
+        claim: r.claim,
+        sourceType: "history",
+        verdict: r.verdict,
+        harmLevel: r.harm_level,
+        explanation: r.explanation,
+        sources: (r.sources ?? []).map((s: any) => ({ name: s.source || s.title || s.name, url: s.url })),
+        timesChecked: r.timesChecked,
+      });
+    }
+
+    res.json(combined.slice(0, 6));
+  } catch (err) {
+    console.error("related-claims failed:", err);
+    res.status(500).json({ error: "Could not load related claims. Please try again." });
   }
-
-  for (const r of dbClaims as any[]) {
-    if (combined.length >= 6) break;
-    const key = r.claim.trim().toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    combined.push({
-      claim: r.claim,
-      sourceType: "history",
-      verdict: r.verdict,
-      harmLevel: r.harm_level,
-      explanation: r.explanation,
-      sources: (r.sources ?? []).map((s: any) => ({ name: s.source || s.title || s.name, url: s.url })),
-      timesChecked: r.timesChecked,
-    });
-  }
-
-  res.json(combined.slice(0, 6));
 });
 
 const PORT = Number(process.env.PORT) || 3000;

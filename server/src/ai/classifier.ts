@@ -193,19 +193,34 @@ Important:
   say something genuinely different — never restate one in another:
   - "explanation": what the evidence shows about the real-world
     risk/relationship the claim describes.
-  - "caveats": what's missing, overstated, unverified, or not directly
-    backed by the cited evidence.
-  - "bottomLine": the single practical takeaway — what an ordinary
-    reader should actually think or do differently (or not) after
-    reading this. Concrete and actionable where the evidence supports
-    it (e.g. "moderate, regular consumption of any sweetened drink —
-    diet or sugary — is the more reliable guidance here" beats "more
-    research is needed"). Never diagnose, never prescribe a specific
-    medical treatment, dose, or regimen — general, widely-accepted
-    lifestyle framing is fine, individualized medical instructions are
-    not. If there's truly no actionable takeaway, say plainly what the
-    reader should NOT conclude from this post instead of something
-    generic.
+  - "caveats": for "Potentially Harmful" claims specifically, this is
+    NOT about evidence-quality nitpicks — it must name the actual,
+    concrete real-world consequences of following the claim: what could
+    genuinely happen to someone's body or health if they act on it
+    (e.g. specific injuries, toxic effects, drug interactions, delayed
+    diagnosis of a serious condition, worsened symptoms). Be factual and
+    specific, not vague ("this could be dangerous") — say what kind of
+    harm, briefly grounded in basic, well-established medical knowledge
+    (chemical burns, organ damage, overdose, anaphylaxis, etc. — whatever
+    actually applies), without inventing exact statistics that aren't in
+    the evidence. For every OTHER verdict, "caveats" stays about
+    evidence gaps as before: what's missing, overstated, unverified, or
+    not directly backed by the cited evidence.
+  - "bottomLine": a crisp, well-written closing takeaway — the single
+    sentence a reader should walk away remembering, like the last line
+    of a good article, not a hedge. State plainly what to actually think
+    or do (or not do) about this claim. Concrete and confident where the
+    evidence supports it (e.g. "moderate, regular consumption of any
+    sweetened drink — diet or sugary — is the more reliable guidance
+    here" beats "more research is needed"). For "Potentially Harmful"
+    claims, make the takeaway equally direct about what NOT to do and
+    why, without repeating the specific harms already covered in
+    "caveats" — this is the conclusion, not a restatement. Never
+    diagnose, never prescribe a specific medical treatment, dose, or
+    regimen — general, widely-accepted lifestyle framing is fine,
+    individualized medical instructions are not. If there's truly no
+    actionable takeaway, say plainly what the reader should NOT conclude
+    from this post instead of something generic.
   - "explainSimple": the SAME core substance as "explanation", rewritten
     genuinely simply — as if talking to a smart 12-year-old with no
     science background. Short, everyday words. No jargon like
@@ -225,8 +240,8 @@ Required JSON:
   "confidence": 0,
   "reasoning": "short internal reasoning, 1 sentence, in English",
   "explanation": "a user-facing explanation, 2 to 4 sentences, written in the language with ISO 639-1 code \"${language}\". Focus on the real-world risk/relationship the evidence shows, in plain terms a normal social media user cares about — not on whether an exact number was independently verified. Neutral and evidence-based. Never diagnose the user or prescribe treatment, and avoid exaggerated certainty.",
-  "caveats": "1 to 3 sentences, in the language with ISO 639-1 code \"${language}\", specifically naming what is NOT directly supported by the evidence, what's overstated, or important missing context (e.g. an exact percentage/comparison the claim makes that the evidence doesn't independently verify, or a confound the evidence mentions). Do not restate the explanation. If there is genuinely nothing to caveat, say so in one short sentence instead of repeating the explanation.",
-  "bottomLine": "1 to 2 sentences, in the language with ISO 639-1 code \"${language}\", giving the single practical takeaway an ordinary reader should walk away with — what to actually think or do (or not do) about this claim. Concrete and useful, not a vague 'more research is needed'. Never diagnose or prescribe a specific individualized treatment/dose.",
+  "caveats": "1 to 3 sentences, in the language with ISO 639-1 code \"${language}\". If the verdict is 'Potentially Harmful', name the actual concrete health consequences of following this claim (specific injuries, toxic effects, drug interactions, delayed treatment of a real condition, etc — factual and specific, not a vague warning). For any other verdict, name what is NOT directly supported by the evidence, what's overstated, or important missing context. Do not restate the explanation. If there is genuinely nothing to caveat, say so in one short sentence instead of repeating the explanation.",
+  "bottomLine": "1 to 2 sentences, in the language with ISO 639-1 code \"${language}\" — a crisp, confident closing takeaway, like the last line of a good article, not a hedge. State plainly what the reader should actually think or do (or not do) about this claim. Concrete and useful, not a vague 'more research is needed'. For 'Potentially Harmful' claims, be direct about what NOT to do and why, without just repeating 'caveats' word for word. Never diagnose or prescribe a specific individualized treatment/dose.",
   "explainSimple": ["an array of 2 to 5 short, plain-language points, in the language with ISO 639-1 code \\\"${language}\\\", each one simple sentence a 12-year-old would understand — genuinely simplified vocabulary and framing, not the same adult wording just shortened. Together they should cover what the claim says, what the evidence actually shows, and what that means for the reader."]
 }
 
