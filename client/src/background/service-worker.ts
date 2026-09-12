@@ -115,7 +115,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         result = await verifyClaim({ audioBase64, mimeType: "audio/webm" });
       }
 
-      await saveToHistory(claimLabel, result, message.postUrl ?? message.source);
+      await saveToHistory(result.claim || claimLabel, result, message.postUrl ?? message.source);
       const response: VerifyResponseMessage = { type: "HEALTHCLAIM_VERIFY_RESULT", ok: true, result };
       sendResponse(response);
     } catch (err) {

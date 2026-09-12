@@ -25,12 +25,20 @@ Rules:
 2. Do not add facts that are not visible in the image.
 3. If there are multiple claims, select the main health claim.
 4. If NO health claim is visible at all, return an empty "claim" field.
-5. Return ONLY valid JSON.
+5. Keep "claim" in the same language as the on-screen text/caption — do
+   not translate it into English.
+6. "searchTerms" must always be in English (translate the key medical
+   terms), since the evidence databases searched afterward are English.
+7. Detect the language of the on-screen text/caption and return its
+   ISO 639-1 code (e.g. "en", "hi", "es"). If there's no legible text to
+   judge from, default to "en".
+8. Return ONLY valid JSON.
 
 Required JSON format:
 {
-  "claim": "the normalized factual health claim, or an empty string if none",
-  "searchTerms": "3-6 keywords suitable for a medical literature search (e.g. PubMed), not a full sentence"
+  "claim": "the normalized factual health claim in its original language, or an empty string if none",
+  "searchTerms": "3-6 English keywords suitable for a medical literature search (e.g. PubMed), not a full sentence",
+  "language": "ISO 639-1 code of the on-screen text's language"
 }
 `;
 
@@ -49,12 +57,19 @@ Rules:
 2. Do not add facts that are not actually said in the audio.
 3. If there are multiple claims, select the main health claim.
 4. If NO health claim is spoken at all, return an empty "claim" field.
-5. Return ONLY valid JSON.
+5. Keep "claim" in the same language it was spoken in — do not translate
+   it into English.
+6. "searchTerms" must always be in English (translate the key medical
+   terms), since the evidence databases searched afterward are English.
+7. Detect the spoken language and return its ISO 639-1 code (e.g. "en",
+   "hi", "es").
+8. Return ONLY valid JSON.
 
 Required JSON format:
 {
-  "claim": "the normalized factual health claim, or an empty string if none",
-  "searchTerms": "3-6 keywords suitable for a medical literature search (e.g. PubMed), not a full sentence"
+  "claim": "the normalized factual health claim in its original spoken language, or an empty string if none",
+  "searchTerms": "3-6 English keywords suitable for a medical literature search (e.g. PubMed), not a full sentence",
+  "language": "ISO 639-1 code of the spoken language"
 }
 `;
 
@@ -84,12 +99,19 @@ Rules:
 4. If NEITHER the caption NOR the image contains a health or nutrition
    claim at all, return an empty "claim" field — do not force-fit an
    unrelated caption into a "claim".
-5. Return ONLY valid JSON.
+5. Keep "claim" in the same language as the caption/on-screen text — do
+   not translate it into English.
+6. "searchTerms" must always be in English (translate the key medical
+   terms), since the evidence databases searched afterward are English.
+7. Detect the language of the caption/on-screen text and return its
+   ISO 639-1 code (e.g. "en", "hi", "es").
+8. Return ONLY valid JSON.
 
 Required JSON format:
 {
-  "claim": "the normalized factual health claim, or an empty string if none",
-  "searchTerms": "3-6 keywords suitable for a medical literature search (e.g. PubMed), not a full sentence"
+  "claim": "the normalized factual health claim in its original language, or an empty string if none",
+  "searchTerms": "3-6 English keywords suitable for a medical literature search (e.g. PubMed), not a full sentence",
+  "language": "ISO 639-1 code of the caption/on-screen text's language"
 }
 
 <untrusted_input>
@@ -107,13 +129,19 @@ function parseExtractedClaim(response: string, originalText: string): ExtractedC
     throw new Error("No health claim could be found.");
   }
 
+  const rawLanguage = parsed.language;
+
   return {
     originalText,
     claim: parsed.claim.trim(),
     searchTerms:
       typeof parsed.searchTerms === "string" && parsed.searchTerms.trim()
         ? parsed.searchTerms.trim()
-        : parsed.claim.trim()
+        : parsed.claim.trim(),
+    language:
+      typeof rawLanguage === "string" && /^[a-z]{2}$/i.test(rawLanguage.trim())
+        ? rawLanguage.trim().toLowerCase()
+        : "en"
   };
 }
 

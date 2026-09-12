@@ -4,6 +4,10 @@ export interface ExtractedClaim {
   originalText: string;
   claim: string;
   searchTerms: string;
+  // ISO 639-1 code ("en", "hi", "es"...) of the language the claim itself
+  // is written in — used later to translate the explanation and drive the
+  // UI into that language. Always falls back to "en" if detection fails.
+  language: string;
 }
 
 function cleanJsonResponse(text: string): string {
@@ -45,12 +49,21 @@ Rules:
 6. If the text contains NO health or nutrition claim at all (e.g. it's
    about travel, sports scores, a joke, politics, etc), return an empty
    "claim" field — do not force-fit an unrelated sentence into a "claim".
-7. Return ONLY valid JSON.
+7. Keep "claim" in the SAME language the input text is written in — do
+   not translate it into English.
+8. "searchTerms" must always be in English regardless of the input's
+   language, since the evidence sources searched afterward (PubMed,
+   MedlinePlus, etc.) are English-language medical databases — translate
+   the key medical/nutrition terms into English for this field only.
+9. Detect the language the input is written in and return its ISO 639-1
+   code (e.g. "en", "hi", "es", "bn", "ta").
+10. Return ONLY valid JSON.
 
 Required JSON format:
 {
-  "claim": "the normalized factual health claim, or an empty string if none",
-  "searchTerms": "3-6 keywords suitable for a medical literature search (e.g. PubMed), not a full sentence"
+  "claim": "the normalized factual health claim in its original language, or an empty string if none",
+  "searchTerms": "3-6 English keywords suitable for a medical literature search (e.g. PubMed), not a full sentence",
+  "language": "ISO 639-1 code of the input's language"
 }
 
 <untrusted_input>
@@ -72,7 +85,8 @@ ${originalText}
     return {
       originalText,
       claim: originalText,
-      searchTerms: originalText
+      searchTerms: originalText,
+      language: "en"
     };
   }
 
@@ -92,6 +106,7 @@ ${originalText}
   }
 
   const rawSearchTerms = (parsed as { searchTerms?: unknown })?.searchTerms;
+  const rawLanguage = (parsed as { language?: unknown })?.language;
 
   return {
     originalText,
@@ -99,6 +114,10 @@ ${originalText}
     searchTerms:
       typeof rawSearchTerms === "string" && rawSearchTerms.trim()
         ? rawSearchTerms.trim()
-        : claim
+        : claim,
+    language:
+      typeof rawLanguage === "string" && /^[a-z]{2}$/i.test(rawLanguage.trim())
+        ? rawLanguage.trim().toLowerCase()
+        : "en"
   };
 }

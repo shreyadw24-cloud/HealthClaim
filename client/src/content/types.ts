@@ -3,10 +3,15 @@
 // build plan, so the popup and the in-page overlay stay in sync with the API.
 
 export type VerifyResult = {
+  claim: string;
   verdict: "Supported" | "Partially Supported" | "Insufficient Evidence" | "Potentially Harmful";
   harmLevel: "Low" | "Medium" | "High";
   confidence: number;
   explanation: string;
+  // ISO 639-1 code detected from the claim (e.g. "en", "hi") — drives the
+  // result UI's language via client/src/i18n.ts. Optional because older
+  // cached responses or a stale server won't have it; falls back to "en".
+  language?: string;
   sources: { name: string; url: string }[];
 };
 

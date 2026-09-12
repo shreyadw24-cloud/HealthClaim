@@ -8,6 +8,15 @@ import { findRelatedClaimsOnWeb } from "./ai/relatedClaims.js";
 
 const app = express();
 
+// Render (and most hosts) put the app behind a reverse proxy, which sets
+// the X-Forwarded-For header on every request. Without this, express's
+// req.ip is the proxy's own internal IP for every request (useless for
+// rate limiting) and express-rate-limit logs a ValidationError on every
+// single request warning that it can't trust that header yet. "1" trusts
+// exactly one hop — the proxy directly in front of us — which matches
+// Render's setup.
+app.set("trust proxy", 1);
+
 // Chrome extension requests (service worker / offscreen doc) send either a
 // chrome-extension:// origin or no Origin header at all — never an
 // arbitrary website's origin. This stops random pages from calling our API
@@ -29,10 +38,11 @@ app.use(express.json({ limit: "10mb" }));
 
 // /verify-claim triggers several Gemini calls per request — without a
 // limit, one bad actor (or a runaway retry loop) can burn through the
-// whole API quota. 20 requests / 10 min per IP is generous for real usage.
+// whole API quota. Raised from 20 to 60 per 10 min per IP so a demo
+// session (judges + team testing) doesn't get 429'd mid-demo.
 const verifyLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  limit: 20,
+  limit: 60,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many verification requests. Please wait a bit and try again." },
@@ -61,7 +71,12 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
   const { claim, imageBase64, audioBase64, mimeType } = req.body;
 
   let input: ClaimInput;
-  if (imageBase64) {
+  if (claim && claim.trim() && imageBase64) {
+    // Both a caption AND an image/video-frame screenshot came in together —
+    // send both to Gemini in one call so it can pick the real claim out of
+    // whichever one actually has it (see extractClaimFromTextAndImage).
+    input = { kind: "text-and-image", text: claim, imageBase64, mimeType: mimeType || "image/jpeg" };
+  } else if (imageBase64) {
     input = { kind: "image", imageBase64, mimeType: mimeType || "image/jpeg" };
   } else if (audioBase64) {
     input = { kind: "audio", audioBase64, mimeType: mimeType || "audio/webm" };
@@ -83,8 +98,11 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
     await saveVerification(result.claim, result, harmLevel);
 
     res.json({
+      claim: result.claim,
       verdict: result.verdict,
       harmLevel,
+      confidence: result.confidence,
+      language: result.language,
       explanation: result.explanation,
       sources: result.sources.map((s) => ({
         name: s.source || s.title,
@@ -94,6 +112,19 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error("verify-claim failed:", err);
+
+    // Thrown deliberately by claimExtractor.ts / mediaExtractor.ts when the
+    // post genuinely has no health claim in it — a clearer, non-alarming
+    // message than the generic fallback below, and no retry button on the
+    // client makes sense here since retrying won't change the answer.
+    const message = err instanceof Error ? err.message : "";
+    if (message === "NO_HEALTH_CLAIM" || message.startsWith("Could not find a health claim")) {
+      return res.status(422).json({
+        error: "No health claim was found in this post — nothing to verify here.",
+        noHealthClaim: true
+      });
+    }
+
     res.status(500).json({
       error: "Verification failed. Please try again.",
     });

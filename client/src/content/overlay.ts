@@ -1,6 +1,7 @@
 import { OVERLAY_CSS, injectFontLink } from "./styles";
 import type { VerifyResult, RelatedClaim } from "./types";
 import { requestVerification, requestRelatedClaims } from "./messaging";
+import { getUiStrings } from "../i18n";
 
 // Same verdict → color mapping as STATUS_STYLE in App.tsx (kept in sync by hand
 // since this file can't import from the React app's module tree).
@@ -135,7 +136,7 @@ export class ResultOverlay {
     this.card.style.maxHeight = `${maxHeight}px`;
   }
 
-  private header(): string {
+  private header(closeLabel = "Close"): string {
     return `
       <div class="hc-topbar"></div>
       <div class="hc-overlay-header">
@@ -143,7 +144,7 @@ export class ResultOverlay {
           <div class="hc-badge-sm">${pulseSvg(16, 9, 4)}</div>
           <span class="hc-wordmark">HealthClaim</span>
         </div>
-        <button class="hc-close" aria-label="Close">
+        <button class="hc-close" aria-label="${escapeAttr(closeLabel)}">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
             <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" />
             <line x1="8.5" y1="1.5" x2="1.5" y2="8.5" />
@@ -268,19 +269,20 @@ export class ResultOverlay {
   }
 
   private relatedPanelHtml(): string {
+    const ui = getUiStrings(this.currentResult?.language);
     const { status, items } = this.relatedState;
     let inner = "";
 
     if (status === "loading") {
-      inner = `<p class="hc-related-msg">Searching the web for related claims…</p>`;
+      inner = `<p class="hc-related-msg">${escapeHtml(ui.searchingWeb)}</p>`;
     } else if (status === "error") {
       inner = `
         <div class="hc-related-error-row">
-          <p class="hc-related-msg hc-related-error">Couldn't load related claims.</p>
-          <button class="hc-related-retry">Retry</button>
+          <p class="hc-related-msg hc-related-error">${escapeHtml(ui.couldntLoadRelated)}</p>
+          <button class="hc-related-retry">${escapeHtml(ui.retry)}</button>
         </div>`;
     } else if (status === "loaded" && items.length === 0) {
-      inner = `<p class="hc-related-msg">No related claims found for this topic right now.</p>`;
+      inner = `<p class="hc-related-msg">${escapeHtml(ui.noRelatedFound)}</p>`;
     } else if (status === "loaded") {
       inner = `<div class="hc-related-list">${items
         .map((item, i) => {
@@ -288,10 +290,10 @@ export class ResultOverlay {
           const metaHtml =
             item.sourceType === "history" && item.verdict
               ? `<span class="hc-related-dot" style="background:${STATUS_STYLE[item.verdict].dot}"></span>
-                 <span class="hc-related-verdict">${escapeHtml(item.verdict)}</span>
-                 <span class="hc-related-meta">· Checked ${item.timesChecked}× before</span>`
+                 <span class="hc-related-verdict">${escapeHtml(ui.verdictLabels[item.verdict])}</span>
+                 <span class="hc-related-meta">· ${escapeHtml(ui.checkedNTimes(item.timesChecked ?? 0))}</span>`
               : `<span class="hc-related-meta">${
-                  isVerifying ? "Checking…" : `From the web${item.domain ? ` · ${escapeHtml(item.domain)}` : ""}`
+                  isVerifying ? escapeHtml(ui.checking) : `${escapeHtml(ui.fromWeb)}${item.domain ? ` · ${escapeHtml(item.domain)}` : ""}`
                 }</span>`;
           return `
             <button class="hc-related-item" data-idx="${i}" ${isVerifying ? "disabled" : ""}>
@@ -304,38 +306,39 @@ export class ResultOverlay {
 
     return `
       <div class="hc-related-panel">
-        <p class="hc-related-title">Related claims on this topic</p>
+        <p class="hc-related-title">${escapeHtml(ui.relatedClaimsOnTopic)}</p>
         ${inner}
       </div>`;
   }
 
   private relatedClaimBodyHtml(item: RelatedClaim): string {
     if (!item.verdict) return "";
+    const ui = getUiStrings(this.currentResult?.language);
     const v = STATUS_STYLE[item.verdict];
     const sourceChip = (s: { name: string; url: string }) =>
       `<a class="hc-source-chip" href="${escapeAttr(s.url)}" target="_blank" rel="noopener noreferrer">
         <div class="hc-source-name">${escapeHtml(s.name)}</div>
-        <div class="hc-source-caption">Evidence source</div>
+        <div class="hc-source-caption">${escapeHtml(ui.evidenceSource)}</div>
       </a>`;
     const sourcesHtml = (item.sources ?? []).slice(0, 3).map(sourceChip).join("");
 
     return `
-      <button class="hc-related-back">← Back to your claim</button>
+      <button class="hc-related-back">${escapeHtml(ui.backToYourClaim)}</button>
       <div class="hc-claim-card">
         <div class="hc-claim-label-row">
-          <span class="hc-claim-label">Related Claim</span>
+          <span class="hc-claim-label">${escapeHtml(ui.relatedClaimLabel)}</span>
           <div class="hc-claim-rule"></div>
         </div>
         <p class="hc-claim">${escapeHtml(truncate(item.claim, 160))}</p>
       </div>
-      <span class="hc-pill hc-pill-standalone" style="background:${v.pillBg};color:${v.pillText};border:1px solid ${v.pillBorder}">${escapeHtml(item.verdict)}</span>
+      <span class="hc-pill hc-pill-standalone" style="background:${v.pillBg};color:${v.pillText};border:1px solid ${v.pillBorder}">${escapeHtml(ui.verdictLabels[item.verdict])}</span>
       <div class="hc-evidence-block" style="border-color:${v.borderColor}">
-        <p class="hc-evidence-label" style="color:${v.accentText}">What Evidence Says</p>
+        <p class="hc-evidence-label" style="color:${v.accentText}">${escapeHtml(ui.whatEvidenceSays)}</p>
         <p class="hc-explanation">${escapeHtml(item.explanation ?? "")}</p>
       </div>
       ${
         sourcesHtml
-          ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${sourcesHtml}</div>`
+          ? `<p class="hc-sources-label">${escapeHtml(ui.evidenceSources)}</p><div class="hc-sources">${sourcesHtml}</div>`
           : ""
       }`;
   }
@@ -344,6 +347,7 @@ export class ResultOverlay {
     if (!this.currentResult || !this.currentAnchorRect) return;
     const claim = this.currentClaim;
     const result = this.currentResult;
+    const ui = getUiStrings(result.language);
     this.position(this.currentAnchorRect);
 
     const v = STATUS_STYLE[result.verdict];
@@ -357,7 +361,7 @@ export class ResultOverlay {
     const sourceChip = (s: VerifyResult["sources"][number]) =>
       `<a class="hc-source-chip" href="${escapeAttr(s.url)}" target="_blank" rel="noopener noreferrer">
         <div class="hc-source-name">${escapeHtml(s.name)}</div>
-        <div class="hc-source-caption">Evidence source</div>
+        <div class="hc-source-caption">${escapeHtml(ui.evidenceSource)}</div>
       </a>`;
     const previewSources = result.sources.slice(0, SOURCES_PREVIEW_COUNT);
     const hiddenSources = result.sources.slice(SOURCES_PREVIEW_COUNT);
@@ -384,34 +388,34 @@ export class ResultOverlay {
       bodyHtml = `
         <div class="hc-related-loading">
           <div class="hc-related-spinner"></div>
-          <p class="hc-related-loading-msg">Checking "${escapeHtml(truncate(this.verifyingRelatedClaim, 100))}"…</p>
+          <p class="hc-related-loading-msg">${escapeHtml(ui.checkingClaim(truncate(this.verifyingRelatedClaim, 100)))}</p>
         </div>`;
     } else {
       bodyHtml = `
         <div class="hc-claim-card">
           <div class="hc-claim-label-row">
-            <span class="hc-claim-label">Claim Detected</span>
+            <span class="hc-claim-label">${escapeHtml(ui.claimDetected)}</span>
             <div class="hc-claim-rule"></div>
           </div>
           <p class="hc-claim">${escapeHtml(truncate(claim, 160))}</p>
         </div>
 
         <div class="hc-status-block">
-          <span class="hc-pill" style="background:${v.pillBg};color:${v.pillText};border:1px solid ${v.pillBorder}">${escapeHtml(result.verdict)}</span>
-          <span class="hc-confidence-label">Evidence confidence</span>
+          <span class="hc-pill" style="background:${v.pillBg};color:${v.pillText};border:1px solid ${v.pillBorder}">${escapeHtml(ui.verdictLabels[result.verdict])}</span>
+          <span class="hc-confidence-label">${escapeHtml(ui.evidenceConfidence)}</span>
           <div class="hc-bar-track">
             <div class="hc-bar-fill" style="width:${barWidth};background:linear-gradient(90deg, ${v.barFrom}, ${v.barTo})"></div>
           </div>
         </div>
 
         <div class="hc-evidence-block" style="border-color:${v.borderColor}">
-          <p class="hc-evidence-label" style="color:${v.accentText}">What Evidence Says</p>
+          <p class="hc-evidence-label" style="color:${v.accentText}">${escapeHtml(ui.whatEvidenceSays)}</p>
           <div class="hc-explanation-slot">${this.simpleMode ? explanationSimpleHtml : explanationFullHtml}</div>
         </div>
 
         <div class="hc-accordion">
           <button class="hc-accordion-btn">
-            <span>${isHarmful ? "Why is this harmful?" : "Nuances &amp; Caveats"}</span>
+            <span>${isHarmful ? escapeHtml(ui.whyHarmful) : escapeHtml(ui.nuancesCaveats)}</span>
             <svg class="hc-accordion-chevron ${this.accordionOpen ? "hc-open" : ""}" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9a988e" stroke-width="1.5" stroke-linecap="round">
               <path d="M2 4.5L6 8L10 4.5" />
             </svg>
@@ -423,11 +427,11 @@ export class ResultOverlay {
 
         ${
           result.sources.length
-            ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${
+            ? `<p class="hc-sources-label">${escapeHtml(ui.evidenceSources)}</p><div class="hc-sources">${
                 this.sourcesExpanded ? sourcesHtml + hiddenSourcesHtml : sourcesHtml
               }</div>${
                 hiddenSources.length && !this.sourcesExpanded
-                  ? `<button class="hc-sources-more">+${hiddenSources.length} more source${hiddenSources.length > 1 ? "s" : ""}</button>`
+                  ? `<button class="hc-sources-more">${escapeHtml(ui.moreSources(hiddenSources.length))}</button>`
                   : ""
               }`
             : ""
@@ -438,28 +442,28 @@ export class ResultOverlay {
     }
 
     this.card.innerHTML = `
-      ${this.header()}
+      ${this.header(ui.close)}
       <div class="hc-body">${bodyHtml}</div>
 
       <div class="hc-overlay-footer">
-        <button class="hc-footer-btn hc-btn-more ${this.relatedOpen ? "hc-active" : ""}" aria-label="Related claims">
+        <button class="hc-footer-btn hc-btn-more ${this.relatedOpen ? "hc-active" : ""}" aria-label="${escapeAttr(ui.footerRelated)}">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <circle cx="8" cy="8" r="6.5" /><line x1="8" y1="6.5" x2="8" y2="11" /><circle cx="8" cy="4.8" r="0.6" fill="currentColor" />
           </svg>
-          <span>${this.relatedOpen ? "Hide" : "Related"}</span>
+          <span>${this.relatedOpen ? escapeHtml(ui.footerHide) : escapeHtml(ui.footerRelated)}</span>
         </button>
-        <button class="hc-footer-btn hc-btn-explain ${this.simpleMode ? "hc-active" : ""}" aria-label="Explain simply">
+        <button class="hc-footer-btn hc-btn-explain ${this.simpleMode ? "hc-active" : ""}" aria-label="${escapeAttr(ui.footerExplain)}">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <path d="M2 4.5h12M2 8h8.5M2 11.5h5.5" />
           </svg>
-          <span>${this.simpleMode ? "Full" : "Explain"}</span>
+          <span>${this.simpleMode ? escapeHtml(ui.footerFull) : escapeHtml(ui.footerExplain)}</span>
         </button>
-        <button class="hc-footer-btn hc-btn-share ${this.shareCopied ? "hc-active" : ""}" aria-label="Share result">
+        <button class="hc-footer-btn hc-btn-share ${this.shareCopied ? "hc-active" : ""}" aria-label="${escapeAttr(ui.footerShare)}">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <circle cx="12" cy="3" r="1.8" /><circle cx="3.5" cy="8" r="1.8" /><circle cx="12" cy="13" r="1.8" />
             <line x1="5.3" y1="7.1" x2="10.2" y2="3.9" /><line x1="5.3" y1="8.9" x2="10.2" y2="12.1" />
           </svg>
-          <span>${this.shareCopied ? "Copied" : "Share"}</span>
+          <span>${this.shareCopied ? escapeHtml(ui.footerCopied) : escapeHtml(ui.footerShare)}</span>
         </button>
       </div>
     `;
@@ -524,7 +528,8 @@ export class ResultOverlay {
     // short summary to the clipboard.
     const shareBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-share");
     shareBtn?.addEventListener("click", async () => {
-      const shareText = `"${truncate(claim, 160)}" — ${result.verdict} (checked with HealthClaim)`;
+      const shareUi = getUiStrings(this.currentResult?.language);
+      const shareText = `"${truncate(claim, 160)}" — ${shareUi.verdictLabels[result.verdict]} (checked with HealthClaim)`;
       if (navigator.share) {
         try {
           await navigator.share({ title: "HealthClaim result", text: shareText });

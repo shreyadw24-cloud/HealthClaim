@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { getUiStrings } from "./i18n";
+import type { UiStrings } from "./i18n";
 
 type Screen = "home" | "loading" | "result-supported" | "result-harmful" | "history" | "error";
 
@@ -10,10 +12,14 @@ const POPUP_MIN_HEIGHT = 520;
 
 // ── API ──────────────────────────────────────────────────────────────────────
 type VerifyResult = {
+  claim: string;
   verdict: "Supported" | "Partially Supported" | "Insufficient Evidence" | "Potentially Harmful";
   harmLevel: "Low" | "Medium" | "High";
   confidence: number;
   explanation: string;
+  // ISO 639-1 code detected from the claim — drives the result screen's
+  // language via src/i18n.ts. See server/src/ai/claimExtractor.ts.
+  language?: string;
   sources: { name: string; url: string }[];
 };
 
@@ -513,37 +519,39 @@ function RelatedClaimsPanel({
   verifyingClaim,
   onSelect,
   onRetry,
+  ui,
 }: {
   status: "idle" | "loading" | "loaded" | "error";
   items: RelatedClaim[];
   verifyingClaim: string | null;
   onSelect: (item: RelatedClaim) => void;
   onRetry: () => void;
+  ui: UiStrings;
 }) {
   return (
     <div className="mt-4 rounded-xl p-3" style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.14)" }}>
       <p className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5">
-        Related claims on this topic
+        {ui.relatedClaimsOnTopic}
       </p>
 
       {status === "loading" && (
         <p className="font-inter text-[12px]" style={{ color: "#6b6a63" }}>
-          Searching the web for related claims…
+          {ui.searchingWeb}
         </p>
       )}
 
       {status === "error" && (
         <div className="flex items-center justify-between">
-          <p className="font-inter text-[12px]" style={{ color: "#A32D2D" }}>Couldn't load related claims.</p>
+          <p className="font-inter text-[12px]" style={{ color: "#A32D2D" }}>{ui.couldntLoadRelated}</p>
           <button onClick={onRetry} className="font-inter text-[11px] font-semibold" style={{ color: "#178F88" }}>
-            Retry
+            {ui.retry}
           </button>
         </div>
       )}
 
       {status === "loaded" && items.length === 0 && (
         <p className="font-inter text-[12px]" style={{ color: "#6b6a63" }}>
-          No related claims found for this topic right now.
+          {ui.noRelatedFound}
         </p>
       )}
 
@@ -567,15 +575,15 @@ function RelatedClaimsPanel({
                     <>
                       <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: STATUS_STYLE[item.verdict].dot }} />
                       <span className="font-inter text-[10.5px] font-medium" style={{ color: "#6b6a63" }}>
-                        {item.verdict}
+                        {ui.verdictLabels[item.verdict]}
                       </span>
                       <span className="font-inter text-[10px]" style={{ color: "#9a988e" }}>
-                        · Checked {item.timesChecked}× before
+                        · {ui.checkedNTimes(item.timesChecked ?? 0)}
                       </span>
                     </>
                   ) : (
                     <span className="font-inter text-[10px]" style={{ color: "#9a988e" }}>
-                      {isVerifying ? "Checking…" : `From the web${item.domain ? ` · ${item.domain}` : ""}`}
+                      {isVerifying ? ui.checking : `${ui.fromWeb}${item.domain ? ` · ${item.domain}` : ""}`}
                     </span>
                   )}
                 </div>
@@ -588,7 +596,7 @@ function RelatedClaimsPanel({
   );
 }
 
-function RelatedClaimBody({ item, onBack }: { item: RelatedClaim; onBack: () => void }) {
+function RelatedClaimBody({ item, onBack, ui }: { item: RelatedClaim; onBack: () => void; ui: UiStrings }) {
   if (!item.verdict) return null; // guarded by caller — verdict is always present by render time
   const s = STATUS_STYLE[item.verdict];
   return (
@@ -598,13 +606,13 @@ function RelatedClaimBody({ item, onBack }: { item: RelatedClaim; onBack: () => 
         className="flex items-center gap-1.5 font-inter text-[11.5px] font-semibold mb-3"
         style={{ color: "#178F88" }}
       >
-        ← Back to your claim
+        {ui.backToYourClaim}
       </button>
 
       <div className="rounded-2xl p-4" style={{ background: "#FFFFFF", border: "1px solid rgba(11,31,58,0.08)", boxShadow: "0 2px 8px rgba(11,31,58,0.04)" }}>
         <div className="flex items-center gap-2 mb-2.5">
           <span className="font-inter text-[9.5px] font-semibold text-[#9a988e] tracking-[0.14em] uppercase">
-            Related Claim
+            {ui.relatedClaimLabel}
           </span>
           <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.08)" }} />
         </div>
@@ -615,12 +623,12 @@ function RelatedClaimBody({ item, onBack }: { item: RelatedClaim; onBack: () => 
         className="inline-block mt-3.5 px-3.5 py-1.5 rounded-full font-inter text-[11.5px] font-semibold"
         style={{ background: s.pillBg, color: s.pillText, border: `1px solid ${s.pillBorder}` }}
       >
-        {item.verdict}
+        {ui.verdictLabels[item.verdict]}
       </span>
 
       <div className="pl-[14px] mt-4" style={{ borderLeft: `3px solid ${s.borderColor}` }}>
         <p className="font-inter text-[10.5px] font-semibold uppercase tracking-[0.1em]" style={{ color: s.accentText }}>
-          What Evidence Says
+          {ui.whatEvidenceSays}
         </p>
         <p className="font-inter text-[13px] leading-[1.6] mt-1.5" style={{ color: "#4a4a45" }}>
           {item.explanation}
@@ -630,7 +638,7 @@ function RelatedClaimBody({ item, onBack }: { item: RelatedClaim; onBack: () => 
       {item.sources && item.sources.length > 0 && (
         <div className="mt-3.5">
           <p className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5">
-            Evidence Sources
+            {ui.evidenceSources}
           </p>
           <div className="flex gap-2 flex-wrap">
             {item.sources.slice(0, 3).map((src, i) => (
@@ -643,7 +651,7 @@ function RelatedClaimBody({ item, onBack }: { item: RelatedClaim; onBack: () => 
                 style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
               >
                 <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
-                <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">Evidence source</div>
+                <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">{ui.evidenceSource}</div>
               </a>
             ))}
           </div>
@@ -673,6 +681,7 @@ function ResultScreen({
   });
   const [viewingRelated, setViewingRelated] = useState<RelatedClaim | null>(null);
   const [verifyingRelatedClaim, setVerifyingRelatedClaim] = useState<string | null>(null);
+  const ui = getUiStrings(result.language);
 
   async function loadRelated() {
     setRelated({ status: "loading", items: [] });
@@ -731,7 +740,7 @@ function ResultScreen({
   const hiddenSourcesCount = Math.max(0, result.sources.length - SOURCES_PREVIEW_COUNT);
 
   const handleShare = async () => {
-    const shareText = `"${claim}" — ${result.verdict} (checked with HealthClaim)`;
+    const shareText = `"${claim}" — ${ui.verdictLabels[result.verdict]} (checked with HealthClaim)`;
     if (navigator.share) {
       try {
         await navigator.share({ title: "HealthClaim result", text: shareText });
@@ -751,7 +760,7 @@ function ResultScreen({
 
   const footerButtons = [
     {
-      tip: relatedOpen ? "Hide related" : "Related claims",
+      tip: relatedOpen ? ui.footerHide : ui.footerRelated,
       active: relatedOpen,
       onClick: () => {
         const next = !relatedOpen;
@@ -767,7 +776,7 @@ function ResultScreen({
       ),
     },
     {
-      tip: simpleMode ? "Show full" : "Explain simply",
+      tip: simpleMode ? ui.footerFull : ui.footerExplain,
       active: simpleMode,
       onClick: () => setSimpleMode((v) => !v),
       icon: (
@@ -777,7 +786,7 @@ function ResultScreen({
       ),
     },
     {
-      tip: copied ? "Copied" : "Share result",
+      tip: copied ? ui.footerCopied : ui.footerShare,
       active: copied,
       onClick: handleShare,
       icon: (
@@ -831,7 +840,7 @@ function ResultScreen({
           onClick={onClose}
           className="w-[26px] h-[26px] flex items-center justify-center rounded-full transition-colors"
           style={{ border: "1px solid rgba(11,31,58,0.12)", color: "#8a8a86" }}
-          aria-label="Close"
+          aria-label={ui.close}
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" />
@@ -843,7 +852,7 @@ function ResultScreen({
       {/* Body */}
       <div className="flex-1 px-[18px] py-4">
       {viewingRelated ? (
-        <RelatedClaimBody item={viewingRelated} onBack={() => setViewingRelated(null)} />
+        <RelatedClaimBody item={viewingRelated} onBack={() => setViewingRelated(null)} ui={ui} />
       ) : verifyingRelatedClaim ? (
         <div className="flex flex-col items-center justify-center gap-3 py-14">
           <div
@@ -851,7 +860,7 @@ function ResultScreen({
             style={{ border: "2.5px solid rgba(32,178,170,0.2)", borderTopColor: "#20B2AA" }}
           />
           <p className="font-fraunces text-[13px] italic text-center px-6" style={{ color: "#0B1F3A" }}>
-            Checking "{verifyingRelatedClaim}"…
+            {ui.checkingClaim(verifyingRelatedClaim)}
           </p>
         </div>
       ) : (
@@ -869,7 +878,7 @@ function ResultScreen({
             <span
               className="font-inter text-[9.5px] font-semibold text-[#9a988e] tracking-[0.14em] uppercase"
             >
-              Claim Detected
+              {ui.claimDetected}
             </span>
             <div className="flex-1 h-px" style={{ background: "rgba(11,31,58,0.08)" }} />
           </div>
@@ -884,10 +893,10 @@ function ResultScreen({
             className="self-start px-3.5 py-1.5 rounded-full font-inter text-[11.5px] font-semibold"
             style={{ background: s.pillBg, color: s.pillText, border: `1px solid ${s.pillBorder}` }}
           >
-            {result.verdict}
+            {ui.verdictLabels[result.verdict]}
           </span>
           <div className="flex items-center justify-between mt-1">
-            <span className="font-inter text-[10.5px] text-[#9a988e]">Evidence confidence</span>
+            <span className="font-inter text-[10.5px] text-[#9a988e]">{ui.evidenceConfidence}</span>
           </div>
           <div
             className="h-[5px] rounded-[4px] overflow-hidden"
@@ -912,7 +921,7 @@ function ResultScreen({
             className="font-inter text-[10.5px] font-semibold uppercase tracking-[0.1em]"
             style={{ color: s.accentText }}
           >
-            What Evidence Says
+            {ui.whatEvidenceSays}
           </p>
           {simpleMode ? (
             <ul className="mt-1.5 flex flex-col gap-1.5">
@@ -942,7 +951,7 @@ function ResultScreen({
             className="w-full flex items-center justify-between px-3.5 py-3 transition-colors hover:bg-[#0B1F3A]/[0.03]"
           >
             <span className="font-inter text-[12.5px] font-medium text-[#0B1F3A]">
-              {isHarmful ? "Why is this harmful?" : "Nuances & Caveats"}
+              {isHarmful ? ui.whyHarmful : ui.nuancesCaveats}
             </span>
             <svg
               width="12"
@@ -981,7 +990,7 @@ function ResultScreen({
           <p
             className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5"
           >
-            Evidence Sources
+            {ui.evidenceSources}
           </p>
           <div className="flex gap-2 flex-wrap">
             {visibleSources.map((src, i) => (
@@ -994,7 +1003,7 @@ function ResultScreen({
                 style={{ background: "#F3FBFA", border: "1px solid rgba(32,178,170,0.18)" }}
               >
                 <div className="font-inter text-[11px] font-semibold text-[#0B1F3A]">{src.name}</div>
-                <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">Evidence source</div>
+                <div className="font-inter text-[9px] text-[#9a988e] mt-0.5">{ui.evidenceSource}</div>
               </a>
             ))}
           </div>
@@ -1004,7 +1013,7 @@ function ResultScreen({
               className="mt-2 font-inter text-[11px] font-semibold"
               style={{ color: s.accentText }}
             >
-              +{hiddenSourcesCount} more source{hiddenSourcesCount > 1 ? "s" : ""}
+              {ui.moreSources(hiddenSourcesCount)}
             </button>
           )}
         </div>
@@ -1016,6 +1025,7 @@ function ResultScreen({
             verifyingClaim={verifyingRelatedClaim}
             onSelect={handleSelectRelated}
             onRetry={loadRelated}
+            ui={ui}
           />
         )}
       </>
@@ -1040,7 +1050,7 @@ function ResultScreen({
               className="font-inter text-[9.5px]"
               style={{ color: active ? "#178F88" : "#6b6a63", fontWeight: active ? 600 : 400 }}
             >
-              {tip.split(" ")[0]}
+              {tip}
               </span>
             </button>
         ))}

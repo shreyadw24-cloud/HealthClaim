@@ -13,6 +13,11 @@ export interface VerifyClaimResult {
     | "Potentially Harmful";
   confidence: number;
   explanation: string;
+  // ISO 639-1 code of the language the claim (and now the explanation)
+  // are written in — the client uses this to switch the result UI's
+  // labels/buttons into that language too. See claimExtractor.ts /
+  // mediaExtractor.ts for where this gets detected.
+  language: string;
   sources: {
     title: string;
     source: string;
@@ -127,7 +132,8 @@ URL: ${item.url}`
   // merged to cut quota usage per verification by a third).
   const classification = await classifyClaim(
     extracted.claim,
-    evidenceText
+    evidenceText,
+    extracted.language
   );
 
   console.log(
@@ -139,6 +145,7 @@ URL: ${item.url}`
     verdict: classification.verdict,
     confidence: classification.confidence,
     explanation: classification.explanation,
+    language: extracted.language,
     sources: evidence.map((item) => ({
       title: item.title,
       source: item.source,
