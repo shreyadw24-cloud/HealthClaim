@@ -125,9 +125,36 @@ evidence. If real evidence exists on the claim's general topic, prefer
 instead of defaulting here.
 
 Potentially Harmful:
-Following the claim could reasonably create a meaningful health risk,
-especially if it encourages unsafe treatment, stopping necessary care,
-dangerous behavior, or a clearly unsafe practice.
+Following the claim could reasonably create a meaningful health risk.
+This is a SAFETY OVERRIDE, not just another evidence-quality tier — it
+applies regardless of whether some tangential evidence technically
+supports part of the claim. Use it when the claim does any of:
+- Recommends or implies a dangerous substance, dose, or practice as
+  beneficial or safe (e.g. "drinking bleach in small doses cures
+  cancer" — the fact that bleach kills germs on surfaces is irrelevant;
+  ingesting it is dangerous, so this is Harmful, not Partially
+  Supported).
+- Encourages stopping, delaying, or replacing necessary medical
+  treatment (prescribed medication, insulin, chemotherapy, vaccines,
+  emergency care) with the claim's suggestion instead.
+- Promotes an extreme, unproven, or unsafe intervention for a serious
+  condition (e.g. fasting to cure diabetes, essential oils to treat
+  cancer, mega-doses of a vitamin/supplement).
+- Gives dosing, timing, or combination advice that could cause harm if
+  followed literally (e.g. specific mg amounts, "take X with Y").
+- Encourages ignoring clear warning signs/symptoms that need medical
+  attention.
+If a claim matches one of these, classify it as "Potentially Harmful"
+even if it also has a kernel of accurate general science in it (like
+the bleach example above) — the risk of someone acting on it outweighs
+whatever partial accuracy exists elsewhere in the claim. Do not let the
+general preference (elsewhere in this prompt) for "Supported" or
+"Partially Supported" over "Insufficient Evidence" pull a genuinely
+risky claim into either of those categories — that preference is about
+evidence-quality tiers among claims that are NOT dangerous to act on.
+A claim can simultaneously have some supporting evidence for a general
+mechanism AND be Potentially Harmful for what it tells the reader to
+actually do; when that happens, Potentially Harmful wins.
 
 Important:
 - Do not invent medical evidence.
@@ -144,6 +171,11 @@ Important:
   "Supported". Reserve "Partially Supported" for when the CLAIM ITSELF
   contains a specific figure or comparison that goes beyond what the
   evidence verifies.
+- Before settling on Supported/Partially Supported/Insufficient,
+  ALWAYS first check whether the claim matches the "Potentially
+  Harmful" safety triggers above. Safety comes first — check for it
+  BEFORE weighing evidence quality, not as an afterthought only when
+  nothing else fits.
 - Consider the actual evidence supplied below.
 - Write the "explanation", "caveats", "bottomLine", and "explainSimple"
   fields in the language with ISO 639-1 code "${language}" (the same
