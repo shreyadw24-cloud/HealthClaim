@@ -106,6 +106,7 @@ app.post("/verify-claim", verifyLimiter, async (req, res) => {
       explanation: result.explanation,
       caveats: result.caveats,
       bottomLine: result.bottomLine,
+      explainSimple: result.explainSimple,
       sources: result.sources.map((s) => ({
         name: s.source || s.title,
         url: s.url,

@@ -14,6 +14,11 @@ export type VerifyResult = {
   // The practical "what should I actually think/do" takeaway — powers a
   // new "Bottom Line" section. Optional for the same reason as above.
   bottomLine?: string;
+  // A genuinely simplified (12-year-old level) version of "explanation",
+  // as an array of short points. Powers "Explain Simply". Optional for
+  // the same reason as caveats/bottomLine — older cached responses or a
+  // stale server won't have it.
+  explainSimple?: string[];
   // ISO 639-1 code detected from the claim (e.g. "en", "hi") — drives the
   // result UI's language via client/src/i18n.ts. Optional because older
   // cached responses or a stale server won't have it; falls back to "en".

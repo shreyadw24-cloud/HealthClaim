@@ -377,16 +377,19 @@ export class ResultOverlay {
     const sourcesHtml = previewSources.map(sourceChip).join("");
     const hiddenSourcesHtml = hiddenSources.map(sourceChip).join("");
 
-    // "Explain simply" reuses the same explanation field the backend already
-    // sends — just breaks it into short, plain sentences instead of one
-    // dense paragraph. No extra API call needed.
-    const explanationSentences =
-      result.explanation
-        .match(/[^.!?]+[.!?]*/g)
-        ?.map((t) => t.trim())
-        .filter(Boolean) ?? [result.explanation];
+    // "Explain simply" now uses a genuinely kid-simplified field the
+    // backend generates alongside the main explanation, not just the same
+    // sentences rechopped. Fall back to the old sentence-split behavior
+    // only for stale/cached results from before this field existed.
+    const explainSimplePoints =
+      result.explainSimple && result.explainSimple.length > 0
+        ? result.explainSimple
+        : result.explanation
+            .match(/[^.!?]+[.!?]*/g)
+            ?.map((t) => t.trim())
+            .filter(Boolean) ?? [result.explanation];
     const explanationFullHtml = `<p class="hc-explanation">${escapeHtml(result.explanation)}</p>`;
-    const explanationSimpleHtml = `<ul class="hc-explanation-list" style="color:${v.accentText}">${explanationSentences
+    const explanationSimpleHtml = `<ul class="hc-explanation-list" style="color:${v.accentText}">${explainSimplePoints
       .map((sentence) => `<li><span>${escapeHtml(sentence)}</span></li>`)
       .join("")}</ul>`;
 

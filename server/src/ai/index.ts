@@ -19,6 +19,11 @@ export interface VerifyClaimResult {
   // The practical "what should I actually think/do" takeaway — see
   // classifier.ts. Powers a new "Bottom Line" UI section.
   bottomLine: string;
+  // A real, genuinely-simplified (12-year-old level) rewrite of
+  // "explanation" — see classifier.ts. Powers the "Explain Simply"
+  // toggle as a list of short points rather than resplitting the same
+  // adult-level sentences.
+  explainSimple: string[];
   // ISO 639-1 code of the language the claim (and now the explanation)
   // are written in — the client uses this to switch the result UI's
   // labels/buttons into that language too. See claimExtractor.ts /
@@ -162,6 +167,7 @@ URL: ${item.url}`
     explanation: classification.explanation,
     caveats: classification.caveats,
     bottomLine: classification.bottomLine,
+    explainSimple: classification.explainSimple,
     language: extracted.language,
     sources: evidence.map((item) => ({
       title: item.title,

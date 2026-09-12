@@ -23,6 +23,11 @@ type VerifyResult = {
   // The practical "what should I actually think/do" takeaway — powers a
   // new "Bottom Line" section. Optional for the same reason as above.
   bottomLine?: string;
+  // A genuinely simplified (12-year-old level) version of "explanation",
+  // as an array of short points. Powers "Explain Simply". Optional for
+  // the same reason as caveats/bottomLine — older cached responses or a
+  // stale server won't have it.
+  explainSimple?: string[];
   // ISO 639-1 code detected from the claim — drives the result screen's
   // language via src/i18n.ts. See server/src/ai/claimExtractor.ts.
   language?: string;
@@ -755,12 +760,16 @@ function ResultScreen({
       ? `${Math.round(Math.max(0, Math.min(1, result.confidence)) * 100)}%`
       : s.barWidth;
 
-  // "Explain simply" reuses the same explanation field the backend already
-  // sends — just breaks it into short, plain sentences instead of one dense
-  // paragraph. No extra API call needed.
-  const explanationSentences = result.explanation.match(/[^.!?]+[.!?]*/g)?.map((t) => t.trim()).filter(Boolean) ?? [
-    result.explanation,
-  ];
+  // "Explain simply" now uses a genuinely kid-simplified field the backend
+  // generates alongside the main explanation, not just the same sentences
+  // rechopped. Fall back to the old sentence-split behavior only for
+  // stale/cached results from before this field existed.
+  const explainSimplePoints =
+    result.explainSimple && result.explainSimple.length > 0
+      ? result.explainSimple
+      : result.explanation.match(/[^.!?]+[.!?]*/g)?.map((t) => t.trim()).filter(Boolean) ?? [
+          result.explanation,
+        ];
 
   const SOURCES_PREVIEW_COUNT = 3;
   const visibleSources = sourcesExpanded ? result.sources : result.sources.slice(0, SOURCES_PREVIEW_COUNT);
@@ -952,7 +961,7 @@ function ResultScreen({
           </p>
           {simpleMode ? (
             <ul className="mt-1.5 flex flex-col gap-1.5">
-              {explanationSentences.map((sentence, i) => (
+              {explainSimplePoints.map((sentence, i) => (
                 <li key={i} className="flex items-start gap-2">
                   <span className="mt-[7px] w-[4px] h-[4px] rounded-full flex-none" style={{ background: s.accentText }} />
                   <span className="font-inter text-[13px] leading-[1.6]" style={{ color: "#4a4a45" }}>
