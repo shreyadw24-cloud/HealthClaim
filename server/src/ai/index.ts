@@ -117,6 +117,15 @@ export async function verifyClaim(
     REAL_CONTENT_SOURCES.has(item.source)
   );
 
+  // TEMP DEBUG — remove once we confirm evidence sources are returning
+  // real content. If groundingCount is 0 on every claim (even simple
+  // ones), the classifier always sees "No evidence was retrieved." and
+  // will correctly-but-uselessly return "Insufficient Evidence" every
+  // time — that's an evidence-retrieval problem, not a classifier one.
+  console.log(
+    `[evidence debug] searchTerms="${extracted.searchTerms}" totalEvidence=${evidence.length} groundingEvidence=${groundingEvidence.length} sources=[${groundingEvidence.map((e) => e.source).join(", ")}]`
+  );
+
   const evidenceText =
     groundingEvidence.length > 0
       ? groundingEvidence
