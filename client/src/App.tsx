@@ -17,6 +17,9 @@ type VerifyResult = {
   harmLevel: "Low" | "Medium" | "High";
   confidence: number;
   explanation: string;
+  // Distinct from "explanation" — powers the "Nuances & Caveats" section.
+  // Optional because older cached responses or a stale server won't have it.
+  caveats?: string;
   // ISO 639-1 code detected from the claim — drives the result screen's
   // language via src/i18n.ts. See server/src/ai/claimExtractor.ts.
   language?: string;
@@ -57,6 +60,7 @@ type RelatedClaim = {
   verdict?: VerifyResult["verdict"];
   harmLevel?: VerifyResult["harmLevel"];
   explanation?: string;
+  caveats?: string;
   sources?: { name: string; url: string }[];
 };
 
@@ -711,6 +715,7 @@ function ResultScreen({
         verdict: data.verdict,
         harmLevel: data.harmLevel,
         explanation: data.explanation,
+        caveats: data.caveats,
         sources: data.sources,
       });
     } catch {
@@ -979,7 +984,7 @@ function ResultScreen({
                 className="font-inter text-[12px] text-[#0B1F3A] leading-[1.72]"
                 style={{ opacity: 0.52 }}
               >
-                {result.explanation}
+                {result.caveats || result.explanation}
               </p>
             </div>
           </div>

@@ -13,6 +13,9 @@ export interface VerifyClaimResult {
     | "Potentially Harmful";
   confidence: number;
   explanation: string;
+  // Distinct from "explanation" — see classifier.ts. Powers the UI's
+  // "Nuances & Caveats" section so it no longer just repeats "explanation".
+  caveats: string;
   // ISO 639-1 code of the language the claim (and now the explanation)
   // are written in — the client uses this to switch the result UI's
   // labels/buttons into that language too. See claimExtractor.ts /
@@ -145,6 +148,7 @@ URL: ${item.url}`
     verdict: classification.verdict,
     confidence: classification.confidence,
     explanation: classification.explanation,
+    caveats: classification.caveats,
     language: extracted.language,
     sources: evidence.map((item) => ({
       title: item.title,

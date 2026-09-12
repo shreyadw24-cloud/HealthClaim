@@ -259,6 +259,7 @@ export class ResultOverlay {
         verdict: data.verdict,
         harmLevel: data.harmLevel,
         explanation: data.explanation,
+        caveats: data.caveats,
         sources: data.sources,
       };
     } catch {
@@ -421,7 +422,7 @@ export class ResultOverlay {
             </svg>
           </button>
           <div class="hc-accordion-panel ${this.accordionOpen ? "hc-open" : ""}">
-            <p class="hc-accordion-inner">${escapeHtml(result.explanation)}</p>
+            <p class="hc-accordion-inner">${escapeHtml(result.caveats || result.explanation)}</p>
           </div>
         </div>
 
