@@ -1,6 +1,6 @@
-import { isVerifyRequestMessage } from "../content/types";
-import type { VerifyResponseMessage } from "../content/types";
-import { verifyClaim } from "./api";
+import { isVerifyRequestMessage, isRelatedClaimsRequestMessage } from "../content/types";
+import type { VerifyResponseMessage, RelatedClaimsResponseMessage } from "../content/types";
+import { verifyClaim, fetchRelatedClaims } from "./api";
 import { saveToHistory } from "./history";
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -130,5 +130,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   })();
 
   // Keep the message channel open for the async sendResponse above.
+  return true;
+});
+// Content-script fetches go through the background worker (not a direct
+// fetch from the page) because the server's CORS policy only allows
+// chrome-extension:// origins — a fetch from inside the page's own origin
+// (e.g. https://x.com) would be rejected.
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (!isRelatedClaimsRequestMessage(message)) return undefined;
+
+  (async () => {
+    try {
+      const items = await fetchRelatedClaims(message.claim);
+      const response: RelatedClaimsResponseMessage = {
+        type: "HEALTHCLAIM_RELATED_CLAIMS_RESULT",
+        ok: true,
+        items,
+      };
+      sendResponse(response);
+    } catch (err) {
+      const response: RelatedClaimsResponseMessage = {
+        type: "HEALTHCLAIM_RELATED_CLAIMS_RESULT",
+        ok: false,
+        error: err instanceof Error ? err.message : "Could not load related claims.",
+      };
+      sendResponse(response);
+    }
+  })();
+
   return true;
 });

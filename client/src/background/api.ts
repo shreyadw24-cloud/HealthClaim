@@ -1,4 +1,4 @@
-import type { VerifyResult } from "../content/types";
+import type { VerifyResult, RelatedClaim } from "../content/types";
 
 export type VerifyClaimBody =
   | { claim: string }
@@ -46,4 +46,11 @@ export async function verifyClaim(body: VerifyClaimBody): Promise<VerifyResult> 
   } finally {
     clearTimeout(timeout);
   }
+}
+export async function fetchRelatedClaims(claim: string): Promise<RelatedClaim[]> {
+  const res = await fetch(
+    `${import.meta.env.VITE_API_URL}/related-claims?claim=${encodeURIComponent(claim)}`
+  );
+  if (!res.ok) throw new Error("Could not load related claims.");
+  return res.json();
 }

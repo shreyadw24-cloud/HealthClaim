@@ -1027,33 +1027,23 @@ function ResultScreen({
         className="flex items-center justify-around py-3"
         style={{ borderTop: "1px solid rgba(32,178,170,0.12)" }}
       >
-        {viewingRelated ? (
+        {footerButtons.map(({ tip, icon, active, onClick }, idx) => (
           <button
-            onClick={() => setViewingRelated(null)}
-            className="w-full text-center font-inter text-[12px] font-semibold py-1"
-            style={{ color: "#178F88" }}
+            key={idx}
+            onClick={onClick}
+            className="flex flex-col items-center gap-1 transition-transform duration-150 active:scale-90"
+            aria-label={tip}
+            aria-pressed={active}
           >
-            ← Back to your claim
-          </button>
-        ) : (
-          footerButtons.map(({ tip, icon, active, onClick }, idx) => (
-            <button
-              key={idx}
-              onClick={onClick}
-              className="flex flex-col items-center gap-1 transition-transform duration-150 active:scale-90"
-              aria-label={tip}
-              aria-pressed={active}
+            <span style={{ color: active ? "#178F88" : "#20B2AA" }}>{icon}</span>
+            <span
+              className="font-inter text-[9.5px]"
+              style={{ color: active ? "#178F88" : "#6b6a63", fontWeight: active ? 600 : 400 }}
             >
-              <span style={{ color: active ? "#178F88" : "#20B2AA" }}>{icon}</span>
-              <span
-                className="font-inter text-[9.5px]"
-                style={{ color: active ? "#178F88" : "#6b6a63", fontWeight: active ? 600 : 400 }}
-              >
-                {tip.split(" ")[0]}
+              {tip.split(" ")[0]}
               </span>
             </button>
-          ))
-        )}
+        ))}
       </div>
     </div>
   );

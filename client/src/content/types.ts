@@ -56,3 +56,37 @@ export function isVerifyRequestMessage(msg: unknown): msg is VerifyRequestMessag
     (msg as { type?: unknown }).type === "HEALTHCLAIM_VERIFY"
   );
 }
+
+// ── Related claims ─────────────────────────────────────────────────────────
+// A related claim either comes from a live web search (just claim text +
+// domain, no verdict yet — verifying it is a fresh verification) or from our
+// own Supabase history (already has a precomputed verdict, so showing it is
+// instant). Mirrors the RelatedClaim type in client/src/App.tsx so the popup
+// and the in-page overlay stay in sync.
+export type RelatedClaim = {
+  claim: string;
+  sourceType: "web" | "history";
+  domain?: string;
+  timesChecked?: number;
+  verdict?: VerifyResult["verdict"];
+  harmLevel?: VerifyResult["harmLevel"];
+  explanation?: string;
+  sources?: { name: string; url: string }[];
+};
+
+export type RelatedClaimsRequestMessage = {
+  type: "HEALTHCLAIM_RELATED_CLAIMS";
+  claim: string;
+};
+
+export type RelatedClaimsResponseMessage =
+  | { type: "HEALTHCLAIM_RELATED_CLAIMS_RESULT"; ok: true; items: RelatedClaim[] }
+  | { type: "HEALTHCLAIM_RELATED_CLAIMS_RESULT"; ok: false; error: string };
+
+export function isRelatedClaimsRequestMessage(msg: unknown): msg is RelatedClaimsRequestMessage {
+  return (
+    typeof msg === "object" &&
+    msg !== null &&
+    (msg as { type?: unknown }).type === "HEALTHCLAIM_RELATED_CLAIMS"
+  );
+}

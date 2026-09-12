@@ -1,31 +1,32 @@
 import { OVERLAY_CSS, injectFontLink } from "./styles";
-import type { VerifyResult } from "./types";
+import type { VerifyResult, RelatedClaim } from "./types";
+import { requestVerification, requestRelatedClaims } from "./messaging";
 
 // Same verdict → color mapping as STATUS_STYLE in App.tsx (kept in sync by hand
 // since this file can't import from the React app's module tree).
 const STATUS_STYLE: Record<
   VerifyResult["verdict"],
-  { pillBg: string; pillText: string; pillBorder: string; barFrom: string; barTo: string; barWidth: string; borderColor: string; accentText: string }
+  { pillBg: string; pillText: string; pillBorder: string; barFrom: string; barTo: string; barWidth: string; borderColor: string; accentText: string; dot: string }
 > = {
   Supported: {
     pillBg: "#E8F7F5", pillText: "#0F6E56", pillBorder: "rgba(32,178,170,0.3)",
     barFrom: "#20B2AA", barTo: "#3ED6C9", barWidth: "88%",
-    borderColor: "#20B2AA", accentText: "#0F6E56",
+    borderColor: "#20B2AA", accentText: "#0F6E56", dot: "#20B2AA",
   },
   "Partially Supported": {
     pillBg: "#FDF3E3", pillText: "#854F0B", pillBorder: "rgba(239,159,39,0.35)",
     barFrom: "#EF9F27", barTo: "#FBC96B", barWidth: "58%",
-    borderColor: "#EF9F27", accentText: "#854F0B",
+    borderColor: "#EF9F27", accentText: "#854F0B", dot: "#EF9F27",
   },
   "Insufficient Evidence": {
     pillBg: "#F1F1EF", pillText: "#57564F", pillBorder: "rgba(87,86,79,0.25)",
     barFrom: "#9a988e", barTo: "#c7c5ba", barWidth: "35%",
-    borderColor: "#9a988e", accentText: "#57564F",
+    borderColor: "#9a988e", accentText: "#57564F", dot: "#9a988e",
   },
   "Potentially Harmful": {
     pillBg: "#FCEBEB", pillText: "#A32D2D", pillBorder: "rgba(226,75,74,0.3)",
     barFrom: "#E24B4A", barTo: "#F09595", barWidth: "8%",
-    borderColor: "#E24B4A", accentText: "#A32D2D",
+    borderColor: "#E24B4A", accentText: "#A32D2D", dot: "#E24B4A",
   },
 };
 
@@ -52,6 +53,25 @@ export class ResultOverlay {
   private shadow: ShadowRoot;
   private card: HTMLDivElement;
   private loadingTimer: ReturnType<typeof setInterval> | null = null;
+
+  // ── Related-claims state for the currently shown result ──────────────
+  // Rendered manually (no framework here), so every state change calls
+  // renderResult() to fully rebuild the card's innerHTML and re-bind
+  // listeners — the same mental model as a React re-render.
+  private currentAnchorRect: DOMRect | null = null;
+  private currentClaim = "";
+  private currentResult: VerifyResult | null = null;
+  private accordionOpen = false;
+  private simpleMode = false;
+  private sourcesExpanded = false;
+  private shareCopied = false;
+  private relatedOpen = false;
+  private relatedState: { status: "idle" | "loading" | "loaded" | "error"; items: RelatedClaim[] } = {
+    status: "idle",
+    items: [],
+  };
+  private viewingRelated: RelatedClaim | null = null;
+  private verifyingRelatedClaim: string | null = null;
   private outsideClickHandler = (e: MouseEvent) => {
     if (!this.host.contains(e.target as Node)) this.hide();
   };
@@ -191,7 +211,141 @@ export class ResultOverlay {
 
   showResult(anchorRect: DOMRect, claim: string, result: VerifyResult) {
     this.stopLoadingTimer();
-    this.position(anchorRect);
+    this.currentAnchorRect = anchorRect;
+    this.currentClaim = claim;
+    this.currentResult = result;
+    this.accordionOpen = false;
+    this.simpleMode = false;
+    this.sourcesExpanded = false;
+    this.shareCopied = false;
+    this.relatedOpen = false;
+    this.relatedState = { status: "idle", items: [] };
+    this.viewingRelated = null;
+    this.verifyingRelatedClaim = null;
+    this.renderResult();
+    this.show();
+  }
+
+  private async loadRelated() {
+    this.relatedState = { status: "loading", items: [] };
+    this.renderResult();
+    try {
+      const items = await requestRelatedClaims(this.currentClaim);
+      this.relatedState = { status: "loaded", items };
+    } catch {
+      this.relatedState = { status: "error", items: [] };
+    }
+    this.renderResult();
+  }
+
+  // History-sourced items already carry a precomputed verdict — show
+  // instantly. Web-sourced items are just claim text — verify them live
+  // through the normal verification pipeline (same cost as any fresh check).
+  private async handleSelectRelated(item: RelatedClaim) {
+    if (item.sourceType === "history" && item.verdict) {
+      this.viewingRelated = item;
+      this.renderResult();
+      return;
+    }
+    this.verifyingRelatedClaim = item.claim;
+    this.renderResult();
+    try {
+      const data = await requestVerification({ kind: "text", text: item.claim });
+      this.viewingRelated = {
+        claim: item.claim,
+        sourceType: item.sourceType,
+        domain: item.domain,
+        verdict: data.verdict,
+        harmLevel: data.harmLevel,
+        explanation: data.explanation,
+        sources: data.sources,
+      };
+    } catch {
+      this.relatedState = { ...this.relatedState, status: "error" };
+    }
+    this.verifyingRelatedClaim = null;
+    this.renderResult();
+  }
+
+  private relatedPanelHtml(): string {
+    const { status, items } = this.relatedState;
+    let inner = "";
+
+    if (status === "loading") {
+      inner = `<p class="hc-related-msg">Searching the web for related claims…</p>`;
+    } else if (status === "error") {
+      inner = `
+        <div class="hc-related-error-row">
+          <p class="hc-related-msg hc-related-error">Couldn't load related claims.</p>
+          <button class="hc-related-retry">Retry</button>
+        </div>`;
+    } else if (status === "loaded" && items.length === 0) {
+      inner = `<p class="hc-related-msg">No related claims found for this topic right now.</p>`;
+    } else if (status === "loaded") {
+      inner = `<div class="hc-related-list">${items
+        .map((item, i) => {
+          const isVerifying = this.verifyingRelatedClaim === item.claim;
+          const metaHtml =
+            item.sourceType === "history" && item.verdict
+              ? `<span class="hc-related-dot" style="background:${STATUS_STYLE[item.verdict].dot}"></span>
+                 <span class="hc-related-verdict">${escapeHtml(item.verdict)}</span>
+                 <span class="hc-related-meta">· Checked ${item.timesChecked}× before</span>`
+              : `<span class="hc-related-meta">${
+                  isVerifying ? "Checking…" : `From the web${item.domain ? ` · ${escapeHtml(item.domain)}` : ""}`
+                }</span>`;
+          return `
+            <button class="hc-related-item" data-idx="${i}" ${isVerifying ? "disabled" : ""}>
+              <p class="hc-related-claim">${escapeHtml(truncate(item.claim, 140))}</p>
+              <div class="hc-related-meta-row">${metaHtml}</div>
+            </button>`;
+        })
+        .join("")}</div>`;
+    }
+
+    return `
+      <div class="hc-related-panel">
+        <p class="hc-related-title">Related claims on this topic</p>
+        ${inner}
+      </div>`;
+  }
+
+  private relatedClaimBodyHtml(item: RelatedClaim): string {
+    if (!item.verdict) return "";
+    const v = STATUS_STYLE[item.verdict];
+    const sourceChip = (s: { name: string; url: string }) =>
+      `<a class="hc-source-chip" href="${escapeAttr(s.url)}" target="_blank" rel="noopener noreferrer">
+        <div class="hc-source-name">${escapeHtml(s.name)}</div>
+        <div class="hc-source-caption">Evidence source</div>
+      </a>`;
+    const sourcesHtml = (item.sources ?? []).slice(0, 3).map(sourceChip).join("");
+
+    return `
+      <button class="hc-related-back">← Back to your claim</button>
+      <div class="hc-claim-card">
+        <div class="hc-claim-label-row">
+          <span class="hc-claim-label">Related Claim</span>
+          <div class="hc-claim-rule"></div>
+        </div>
+        <p class="hc-claim">${escapeHtml(truncate(item.claim, 160))}</p>
+      </div>
+      <span class="hc-pill hc-pill-standalone" style="background:${v.pillBg};color:${v.pillText};border:1px solid ${v.pillBorder}">${escapeHtml(item.verdict)}</span>
+      <div class="hc-evidence-block" style="border-color:${v.borderColor}">
+        <p class="hc-evidence-label" style="color:${v.accentText}">What Evidence Says</p>
+        <p class="hc-explanation">${escapeHtml(item.explanation ?? "")}</p>
+      </div>
+      ${
+        sourcesHtml
+          ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${sourcesHtml}</div>`
+          : ""
+      }`;
+  }
+
+  private renderResult() {
+    if (!this.currentResult || !this.currentAnchorRect) return;
+    const claim = this.currentClaim;
+    const result = this.currentResult;
+    this.position(this.currentAnchorRect);
+
     const v = STATUS_STYLE[result.verdict];
     const barWidth =
       typeof result.confidence === "number" && !Number.isNaN(result.confidence)
@@ -223,9 +377,17 @@ export class ResultOverlay {
       .map((sentence) => `<li><span>${escapeHtml(sentence)}</span></li>`)
       .join("")}</ul>`;
 
-    this.card.innerHTML = `
-      ${this.header()}
-      <div class="hc-body">
+    let bodyHtml: string;
+    if (this.viewingRelated) {
+      bodyHtml = this.relatedClaimBodyHtml(this.viewingRelated);
+    } else if (this.verifyingRelatedClaim) {
+      bodyHtml = `
+        <div class="hc-related-loading">
+          <div class="hc-related-spinner"></div>
+          <p class="hc-related-loading-msg">Checking "${escapeHtml(truncate(this.verifyingRelatedClaim, 100))}"…</p>
+        </div>`;
+    } else {
+      bodyHtml = `
         <div class="hc-claim-card">
           <div class="hc-claim-label-row">
             <span class="hc-claim-label">Claim Detected</span>
@@ -244,95 +406,123 @@ export class ResultOverlay {
 
         <div class="hc-evidence-block" style="border-color:${v.borderColor}">
           <p class="hc-evidence-label" style="color:${v.accentText}">What Evidence Says</p>
-          <div class="hc-explanation-slot">${explanationFullHtml}</div>
+          <div class="hc-explanation-slot">${this.simpleMode ? explanationSimpleHtml : explanationFullHtml}</div>
         </div>
 
         <div class="hc-accordion">
           <button class="hc-accordion-btn">
             <span>${isHarmful ? "Why is this harmful?" : "Nuances &amp; Caveats"}</span>
-            <svg class="hc-accordion-chevron" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9a988e" stroke-width="1.5" stroke-linecap="round">
+            <svg class="hc-accordion-chevron ${this.accordionOpen ? "hc-open" : ""}" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#9a988e" stroke-width="1.5" stroke-linecap="round">
               <path d="M2 4.5L6 8L10 4.5" />
             </svg>
           </button>
-          <div class="hc-accordion-panel">
+          <div class="hc-accordion-panel ${this.accordionOpen ? "hc-open" : ""}">
             <p class="hc-accordion-inner">${escapeHtml(result.explanation)}</p>
           </div>
         </div>
 
         ${
           result.sources.length
-            ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${sourcesHtml}</div>${
-                hiddenSources.length
+            ? `<p class="hc-sources-label">Evidence Sources</p><div class="hc-sources">${
+                this.sourcesExpanded ? sourcesHtml + hiddenSourcesHtml : sourcesHtml
+              }</div>${
+                hiddenSources.length && !this.sourcesExpanded
                   ? `<button class="hc-sources-more">+${hiddenSources.length} more source${hiddenSources.length > 1 ? "s" : ""}</button>`
                   : ""
               }`
             : ""
         }
-      </div>
+
+        ${this.relatedOpen ? this.relatedPanelHtml() : ""}
+      `;
+    }
+
+    this.card.innerHTML = `
+      ${this.header()}
+      <div class="hc-body">${bodyHtml}</div>
 
       <div class="hc-overlay-footer">
-        <button class="hc-footer-btn hc-btn-more" aria-label="More context">
+        <button class="hc-footer-btn hc-btn-more ${this.relatedOpen ? "hc-active" : ""}" aria-label="Related claims">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <circle cx="8" cy="8" r="6.5" /><line x1="8" y1="6.5" x2="8" y2="11" /><circle cx="8" cy="4.8" r="0.6" fill="currentColor" />
           </svg>
-          <span>More</span>
+          <span>${this.relatedOpen ? "Hide" : "Related"}</span>
         </button>
-        <button class="hc-footer-btn hc-btn-explain" aria-label="Explain simply">
+        <button class="hc-footer-btn hc-btn-explain ${this.simpleMode ? "hc-active" : ""}" aria-label="Explain simply">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <path d="M2 4.5h12M2 8h8.5M2 11.5h5.5" />
           </svg>
-          <span>Explain</span>
+          <span>${this.simpleMode ? "Full" : "Explain"}</span>
         </button>
-        <button class="hc-footer-btn hc-btn-share" aria-label="Share result">
+        <button class="hc-footer-btn hc-btn-share ${this.shareCopied ? "hc-active" : ""}" aria-label="Share result">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round">
             <circle cx="12" cy="3" r="1.8" /><circle cx="3.5" cy="8" r="1.8" /><circle cx="12" cy="13" r="1.8" />
             <line x1="5.3" y1="7.1" x2="10.2" y2="3.9" /><line x1="5.3" y1="8.9" x2="10.2" y2="12.1" />
           </svg>
-          <span>Share</span>
+          <span>${this.shareCopied ? "Copied" : "Share"}</span>
         </button>
       </div>
     `;
     this.bindClose();
 
-    const accBtn = this.card.querySelector<HTMLButtonElement>(".hc-accordion-btn");
-    const accPanel = this.card.querySelector<HTMLDivElement>(".hc-accordion-panel");
-    const accChevron = this.card.querySelector<SVGElement>(".hc-accordion-chevron");
-    accBtn?.addEventListener("click", () => {
-      accPanel?.classList.toggle("hc-open");
-      accChevron?.classList.toggle("hc-open");
+    // Back-to-your-claim link at the top of the drilled-in related view.
+    this.card.querySelector<HTMLButtonElement>(".hc-related-back")?.addEventListener("click", () => {
+      this.viewingRelated = null;
+      this.renderResult();
     });
 
-    // More context — reveal the rest of the evidence sources beyond the
-    // initial 3-item preview.
+    if (!this.viewingRelated && !this.verifyingRelatedClaim) {
+      const accBtn = this.card.querySelector<HTMLButtonElement>(".hc-accordion-btn");
+      accBtn?.addEventListener("click", () => {
+        this.accordionOpen = !this.accordionOpen;
+        this.renderResult();
+      });
+
+      // "+N more sources" — reveal the rest of the evidence sources beyond
+      // the initial 3-item preview. Independent of the "Related" button,
+      // which now opens the related-claims panel instead.
+      const moreSourcesBtn = this.card.querySelector<HTMLButtonElement>(".hc-sources-more");
+      moreSourcesBtn?.addEventListener("click", () => {
+        this.sourcesExpanded = true;
+        this.renderResult();
+      });
+
+      if (this.relatedOpen) {
+        const retryBtn = this.card.querySelector<HTMLButtonElement>(".hc-related-retry");
+        retryBtn?.addEventListener("click", () => this.loadRelated());
+
+        this.card.querySelectorAll<HTMLButtonElement>(".hc-related-item").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const idx = Number(btn.dataset.idx);
+            const item = this.relatedState.items[idx];
+            if (item) this.handleSelectRelated(item);
+          });
+        });
+      }
+    }
+
+    // Related claims — opens/closes the panel; loads on first open.
     const moreBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-more");
-    const moreSourcesBtn = this.card.querySelector<HTMLButtonElement>(".hc-sources-more");
-    const sourcesRow = this.card.querySelector<HTMLDivElement>(".hc-sources");
-    const expandSources = () => {
-      if (!hiddenSources.length || !sourcesRow) return;
-      sourcesRow.insertAdjacentHTML("beforeend", hiddenSourcesHtml);
-      moreSourcesBtn?.remove();
-      moreBtn?.classList.add("hc-active");
-    };
-    moreBtn?.addEventListener("click", expandSources);
-    moreSourcesBtn?.addEventListener("click", expandSources);
+    moreBtn?.addEventListener("click", () => {
+      this.relatedOpen = !this.relatedOpen;
+      if (this.relatedOpen && this.relatedState.status === "idle") {
+        this.loadRelated();
+      } else {
+        this.renderResult();
+      }
+    });
 
     // Explain simply — swap the same explanation field between one dense
     // paragraph and a short-sentence bullet breakdown. No extra API call.
     const explainBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-explain");
-    const explainLabel = explainBtn?.querySelector("span");
-    const explanationSlot = this.card.querySelector<HTMLDivElement>(".hc-explanation-slot");
-    let simpleMode = false;
     explainBtn?.addEventListener("click", () => {
-      simpleMode = !simpleMode;
-      if (explanationSlot) explanationSlot.innerHTML = simpleMode ? explanationSimpleHtml : explanationFullHtml;
-      if (explainLabel) explainLabel.textContent = simpleMode ? "Full" : "Explain";
-      explainBtn.classList.toggle("hc-active", simpleMode);
+      this.simpleMode = !this.simpleMode;
+      this.renderResult();
     });
 
     // Share result — native share sheet when available, otherwise copy a
     // short summary to the clipboard.
     const shareBtn = this.card.querySelector<HTMLButtonElement>(".hc-btn-share");
-    const shareLabel = shareBtn?.querySelector("span");
     shareBtn?.addEventListener("click", async () => {
       const shareText = `"${truncate(claim, 160)}" — ${result.verdict} (checked with HealthClaim)`;
       if (navigator.share) {
@@ -345,20 +535,16 @@ export class ResultOverlay {
       }
       try {
         await navigator.clipboard.writeText(shareText);
-        if (shareLabel) {
-          shareLabel.textContent = "Copied";
-          shareBtn.classList.add("hc-active");
-          setTimeout(() => {
-            shareLabel.textContent = "Share";
-            shareBtn.classList.remove("hc-active");
-          }, 1800);
-        }
+        this.shareCopied = true;
+        this.renderResult();
+        setTimeout(() => {
+          this.shareCopied = false;
+          this.renderResult();
+        }, 1800);
       } catch {
         // clipboard blocked — silently ignore, button just won't confirm
       }
     });
-
-    this.show();
   }
 
   showError(anchorRect: DOMRect, message: string, onRetry: () => void) {

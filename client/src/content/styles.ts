@@ -230,6 +230,66 @@ export const OVERLAY_CSS = `
     content: ""; width: 4px; height: 4px; border-radius: 999px; background: currentColor;
     margin-top: 7px; flex: none;
   }
+
+  /* ── Related claims ──────────────────────────────────────────────────── */
+  .hc-related-panel {
+    margin-top: 16px; border-radius: 12px; padding: 12px;
+    background: #F3FBFA; border: 1px solid rgba(32,178,170,0.14);
+  }
+  .hc-related-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
+    color: #9a988e; margin: 0 0 10px;
+  }
+  .hc-related-msg {
+    font-family: 'Inter', sans-serif; font-size: 12px; color: #6b6a63; margin: 0;
+  }
+  .hc-related-error { color: #A32D2D; }
+  .hc-related-error-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .hc-related-retry {
+    font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: #178F88;
+    background: none; border: none; cursor: pointer; padding: 0; flex: none;
+  }
+  .hc-related-list { display: flex; flex-direction: column; gap: 8px; }
+  .hc-related-item {
+    text-align: left; border-radius: 10px; padding: 10px;
+    background: #FFFFFF; border: 1px solid rgba(11,31,58,0.07);
+    cursor: pointer; width: 100%;
+  }
+  .hc-related-item:hover { background: #FFFFFF; opacity: 0.92; }
+  .hc-related-item:disabled { opacity: 0.6; cursor: default; }
+  .hc-related-claim {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 12.5px; color: ${BRAND.navy}; line-height: 1.4; margin: 0;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .hc-related-meta-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+  .hc-related-dot { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+  .hc-related-verdict {
+    font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 500; color: #6b6a63;
+  }
+  .hc-related-meta {
+    font-family: 'Inter', sans-serif; font-size: 10px; color: #9a988e;
+  }
+  .hc-related-back {
+    display: flex; align-items: center; gap: 6px; margin-bottom: 12px;
+    font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 600; color: #178F88;
+    background: none; border: none; cursor: pointer; padding: 0;
+  }
+  .hc-pill-standalone { display: inline-block; margin-top: 14px; }
+  .hc-related-loading {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 48px 20px;
+  }
+  .hc-related-spinner {
+    width: 32px; height: 32px; border-radius: 999px;
+    border: 2.5px solid rgba(32,178,170,0.2); border-top-color: #20B2AA;
+    animation: hc-spin 0.7s linear infinite;
+  }
+  .hc-related-loading-msg {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 13px; font-style: italic; color: ${BRAND.navy}; text-align: center; margin: 0;
+  }
   .hc-explanation-list span {
     font-family: 'Inter', sans-serif; font-size: 13px; line-height: 1.6; color: #4a4a45;
   }
