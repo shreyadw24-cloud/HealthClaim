@@ -11,6 +11,9 @@ export type VerifyResult = {
   // Distinct from "explanation" — powers the "Nuances & Caveats" section.
   // Optional because older cached responses or a stale server won't have it.
   caveats?: string;
+  // The practical "what should I actually think/do" takeaway — powers a
+  // new "Bottom Line" section. Optional for the same reason as above.
+  bottomLine?: string;
   // ISO 639-1 code detected from the claim (e.g. "en", "hi") — drives the
   // result UI's language via client/src/i18n.ts. Optional because older
   // cached responses or a stale server won't have it; falls back to "en".
@@ -80,6 +83,7 @@ export type RelatedClaim = {
   harmLevel?: VerifyResult["harmLevel"];
   explanation?: string;
   caveats?: string;
+  bottomLine?: string;
   sources?: { name: string; url: string }[];
 };
 

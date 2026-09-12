@@ -338,6 +338,14 @@ export class ResultOverlay {
         <p class="hc-explanation">${escapeHtml(item.explanation ?? "")}</p>
       </div>
       ${
+        item.bottomLine
+          ? `<div class="hc-bottomline" style="background:${v.borderColor}14;border:1px solid ${v.borderColor}40">
+              <p class="hc-bottomline-label" style="color:${v.accentText}">${escapeHtml(ui.bottomLine)}</p>
+              <p class="hc-bottomline-text">${escapeHtml(item.bottomLine)}</p>
+            </div>`
+          : ""
+      }
+      ${
         sourcesHtml
           ? `<p class="hc-sources-label">${escapeHtml(ui.evidenceSources)}</p><div class="hc-sources">${sourcesHtml}</div>`
           : ""
@@ -425,6 +433,15 @@ export class ResultOverlay {
             <p class="hc-accordion-inner">${escapeHtml(result.caveats || result.explanation)}</p>
           </div>
         </div>
+
+        ${
+          result.bottomLine
+            ? `<div class="hc-bottomline" style="background:${v.borderColor}14;border:1px solid ${v.borderColor}40">
+                <p class="hc-bottomline-label" style="color:${v.accentText}">${escapeHtml(ui.bottomLine)}</p>
+                <p class="hc-bottomline-text">${escapeHtml(result.bottomLine)}</p>
+              </div>`
+            : ""
+        }
 
         ${
           result.sources.length

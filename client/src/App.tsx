@@ -20,6 +20,9 @@ type VerifyResult = {
   // Distinct from "explanation" — powers the "Nuances & Caveats" section.
   // Optional because older cached responses or a stale server won't have it.
   caveats?: string;
+  // The practical "what should I actually think/do" takeaway — powers a
+  // new "Bottom Line" section. Optional for the same reason as above.
+  bottomLine?: string;
   // ISO 639-1 code detected from the claim — drives the result screen's
   // language via src/i18n.ts. See server/src/ai/claimExtractor.ts.
   language?: string;
@@ -61,6 +64,7 @@ type RelatedClaim = {
   harmLevel?: VerifyResult["harmLevel"];
   explanation?: string;
   caveats?: string;
+  bottomLine?: string;
   sources?: { name: string; url: string }[];
 };
 
@@ -639,6 +643,23 @@ function RelatedClaimBody({ item, onBack, ui }: { item: RelatedClaim; onBack: ()
         </p>
       </div>
 
+      {item.bottomLine && (
+        <div
+          className="rounded-xl mt-3.5 px-3.5 py-3"
+          style={{ background: `${s.borderColor}14`, border: `1px solid ${s.borderColor}40` }}
+        >
+          <p
+            className="font-inter text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1"
+            style={{ color: s.accentText }}
+          >
+            {ui.bottomLine}
+          </p>
+          <p className="font-inter text-[12.5px] leading-[1.6]" style={{ color: "#2a2a26" }}>
+            {item.bottomLine}
+          </p>
+        </div>
+      )}
+
       {item.sources && item.sources.length > 0 && (
         <div className="mt-3.5">
           <p className="font-inter text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9a988e] mb-2.5">
@@ -716,6 +737,7 @@ function ResultScreen({
         harmLevel: data.harmLevel,
         explanation: data.explanation,
         caveats: data.caveats,
+        bottomLine: data.bottomLine,
         sources: data.sources,
       });
     } catch {
@@ -989,6 +1011,27 @@ function ResultScreen({
             </div>
           </div>
         </div>
+
+        {/* Bottom Line — the practical takeaway, always visible (not
+            tucked in an accordion) since it's the most actionable part
+            for the user. Falls back to hiding entirely for cached
+            responses from before this field existed. */}
+        {result.bottomLine && (
+          <div
+            className="rounded-xl mt-3.5 px-3.5 py-3"
+            style={{ background: `${s.borderColor}14`, border: `1px solid ${s.borderColor}40` }}
+          >
+            <p
+              className="font-inter text-[10.5px] font-semibold uppercase tracking-[0.1em] mb-1"
+              style={{ color: s.accentText }}
+            >
+              {ui.bottomLine}
+            </p>
+            <p className="font-inter text-[12.5px] leading-[1.6]" style={{ color: "#2a2a26" }}>
+              {result.bottomLine}
+            </p>
+          </div>
+        )}
 
         {/* Evidence sources */}
         <div>

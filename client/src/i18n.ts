@@ -21,6 +21,7 @@ export interface UiStrings {
   whatEvidenceSays: string;
   whyHarmful: string;
   nuancesCaveats: string;
+  bottomLine: string;
   evidenceSources: string;
   evidenceSource: string;
   moreSources: (count: number) => string;
@@ -58,6 +59,7 @@ const en: UiStrings = {
   whatEvidenceSays: "What Evidence Says",
   whyHarmful: "Why is this harmful?",
   nuancesCaveats: "Nuances & Caveats",
+  bottomLine: "Bottom Line",
   evidenceSources: "Evidence Sources",
   evidenceSource: "Evidence source",
   moreSources: (count) => `+${count} more source${count > 1 ? "s" : ""}`,
@@ -94,6 +96,7 @@ const hi: UiStrings = {
   whatEvidenceSays: "प्रमाण क्या कहते हैं",
   whyHarmful: "यह हानिकारक क्यों है?",
   nuancesCaveats: "बारीकियाँ और सावधानियाँ",
+  bottomLine: "निष्कर्ष",
   evidenceSources: "प्रमाण स्रोत",
   evidenceSource: "प्रमाण स्रोत",
   moreSources: (count) => `+${count} और स्रोत`,

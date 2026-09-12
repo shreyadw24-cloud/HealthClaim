@@ -202,6 +202,19 @@ export const OVERLAY_CSS = `
     color: ${BRAND.navy}; opacity: 0.52; margin: 0;
   }
 
+  .hc-bottomline {
+    border-radius: 12px; margin-top: 14px; padding: 12px 14px;
+  }
+  .hc-bottomline-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
+    margin: 0 0 4px;
+  }
+  .hc-bottomline-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px; line-height: 1.6; color: #2a2a26; margin: 0;
+  }
+
   .hc-sources-label {
     font-family: 'Inter', sans-serif;
     font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.14em;
