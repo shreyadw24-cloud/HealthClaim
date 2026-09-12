@@ -68,7 +68,12 @@ function toHarmLevel(verdict: VerifyClaimResult["verdict"]): "Low" | "Medium" | 
 }
 
 app.post("/verify-claim", verifyLimiter, async (req, res) => {
-  const { claim, imageBase64, audioBase64, mimeType } = req.body;
+  const { imageBase64, audioBase64, mimeType } = req.body;
+  // Guard against a malformed request body where "claim" isn't a string
+  // (e.g. a number or object) — calling .trim() on it below would throw
+  // before we ever reach the try/catch, turning a bad request into an
+  // ugly generic 500 instead of a clean 400.
+  const claim = typeof req.body.claim === "string" ? req.body.claim : "";
 
   let input: ClaimInput;
   if (claim && claim.trim() && imageBase64) {
